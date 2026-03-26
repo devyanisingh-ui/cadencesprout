@@ -18,8 +18,9 @@
 5. [Key API Contracts](#5-key-api-contracts)
 6. [Non-Functional Requirements](#6-non-functional-requirements)
 7. [Technology Architecture](#7-technology-architecture)
-8. [Out of Scope — Phase 2 and Phase 3](#8-out-of-scope--phase-2-and-phase-3)
-9. [Success Metrics](#9-success-metrics)
+8. [Phase 2 — Post First 10 Paying Customers](#8-phase-2--post-first-10-paying-customers)
+9. [Phase 3 — Franchise and Global](#9-phase-3--franchise-and-global)
+10. [Success Metrics](#10-success-metrics)
 
 ---
 
@@ -1884,41 +1885,246 @@ Primary cost lever: Rekognition ($4.50) is 47% of cost. Phase 2 optimisation (ba
 
 ---
 
-## 8. Out of Scope — Phase 2 and Phase 3
+## 8. Phase 2 — Post First 10 Paying Customers
 
-The following items are explicitly NOT in Phase 1. They must not be built, specced in stories, or implied in acceptance criteria.
-
-### Phase 2 (Post First 10 Paying Customers)
-
-- **Razorpay auto-billing** — Year 1 billing is manual invoicing only. No subscription automation, no card-on-file, no recurring charges.
-- **Hindi and Tamil language support** — i18n infrastructure is built in Phase 1; string translations are Phase 2. No Hindi or Tamil strings ship in Phase 1.
-- **Per-teacher and per-class engagement score breakdown** — Phase 1 ships school-level aggregate only. Drill-down by class or teacher is Phase 2.
-- **HRMS** — Payroll, leave management, performance reviews. Phase 1 staff management is: name, role, class assignment only.
-- **Offline-first data sync** — Phase 1 is progressive loading with stale-while-revalidate. True local-first sync for low-bandwidth markets is Phase 2.
-- **On-server fine-tuned ML model for milestones** — Phase 1 uses Claude API via OpenRouter. A fine-tuned model trained on Phase 1 usage data is Phase 2.
-- **Enrollment verification / billing fraud prevention** — Attendance-as-billing-source-of-truth audit is Phase 2 when auto-billing requires it.
-- **Interactive quizzes and children's library** — Phase 2.
-- **Live camera / daycare monitoring** — Phase 2.
-- **Bus tracking** — Phase 2.
-- **Infirmary and health records** — Phase 2.
-- **Warehouse and supplies management** — Phase 2.
-- **Teacher Training Module** — Phase 2.
-- **Website Management Module** — Phase 2.
-- **WhatsApp Business API (official)** — Phase 1 uses Wapi bridge with MSG91 SMS fallback. Official API migration is post-launch.
-- **Marathi, Telugu, Kannada language support** — Phase 2 / Phase 3.
-
-### Phase 3 (Franchise and Global)
-
-- **Franchise chain enterprise sales** — Eurokids, Kidzee, Bachpan, Podar Jumbo Kids. Phase 3 outreach begins Month 10 using Phase 1-2 case studies.
-- **Full white-label** — CadenceSprout branding removal for franchise chains. Phase 1 is "school logo + Powered by CadenceSprout". Full white-label architecture must be token-based from Phase 1 to enable this without a rewrite.
-- **CRM integrations** — Phase 3.
-- **Arabic language and RTL UI** — Dubai market, Phase 3.
-- **Southeast Asia expansion** — Indonesia, Vietnam, Philippines — post India PMF (ARR > ₹1Cr, NPS ≥ 50).
-- **Schema-per-tenant isolation** — Row-level tenancy is sufficient for Phase 1 and Phase 2. Franchise chains requiring schema-per-tenant isolation are Phase 3.
+Phase 2 begins when: 10+ paying schools are live, NPS ≥ 30, and the Phase 1 product is stable. These epics are not in scope during Phase 1 and must not be built early.
 
 ---
 
-## 8. Success Metrics
+### Epic P2-1: Razorpay Auto-Billing
+
+**Trigger:** Manual invoicing is operationally unsustainable beyond 20 schools.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P2-1.1 | School admin | Add a Razorpay-linked payment method | Monthly fees are charged automatically |
+| P2-1.2 | School admin | Set per-child billing amount and billing cycle | Each school can have its own pricing |
+| P2-1.3 | System | Verify billed child count against attendance records | Schools cannot under-report enrollment to reduce fees |
+| P2-1.4 | School admin | View billing history and download invoices | Finance and accounting are self-serve |
+| P2-1.5 | Parent | Receive fee payment reminder and pay online | No cash or bank transfer needed |
+
+**Acceptance criteria (P2-1.3 — fraud prevention):**
+- If billed enrollment < 90% of average daily attendance over trailing 30 days → alert sent to CadenceSprout admin
+- Alert includes: school name, billed count, attendance-derived count, delta
+- School is not auto-suspended — human review required
+
+---
+
+### Epic P2-2: Hindi + Tamil Language Support
+
+**Trigger:** Phase 1 i18n infrastructure (react-i18next) is already in place. Phase 2 adds the string translations.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P2-2.1 | Teacher | Switch app language to Hindi or Tamil | I can use CadenceSprout in my native language |
+| P2-2.2 | Parent | Receive WhatsApp notifications in my language | I understand updates without translation |
+| P2-2.3 | AI caption system | Draft captions in the teacher's app language | Parents receive captions in a language they read |
+| P2-2.4 | Admin | Set school-level default language | New users default to the school's primary language |
+
+**Acceptance criteria (P2-2.1):**
+- Language toggle available in Profile → Settings
+- All UI strings, error messages, and empty states translated (no English fallback visible to end user)
+- Language preference persisted across sessions and app reinstalls
+- RTL layout NOT required for Hindi/Tamil (left-to-right scripts)
+
+**Scope note:** Marathi, Telugu, Kannada are Phase 3. Arabic + RTL is Phase 3.
+
+---
+
+### Epic P2-3: Per-Class and Per-Teacher Engagement Score
+
+**Trigger:** School owners with 5+ classes need to identify which teacher is not posting, not just the school-level aggregate.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P2-3.1 | Principal | See engagement score broken down by class | I can identify which class has low parent activity |
+| P2-3.2 | Principal | See posts-per-day broken down by teacher | I can have a data-backed conversation with underperforming teachers |
+| P2-3.3 | Teacher | See my own class's engagement score | I'm motivated by the number going up |
+| P2-3.4 | System | Store per-class snapshots weekly | Historical trends available for principal review |
+
+**Acceptance criteria (P2-3.1):**
+- Class breakdown table on admin dashboard, sorted by engagement % ascending (lowest first)
+- One-tap action: "Message teacher" opens WhatsApp with teacher's number pre-filled
+- Data is weekly snapshot, not real-time (same formula as school-level score)
+
+---
+
+### Epic P2-4: HRMS — Staff Management
+
+**Trigger:** Schools with 10+ staff need payroll, leave, and performance tracking beyond Phase 1's names/roles/class-assignment.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P2-4.1 | Admin | Record staff salary, pay cycle, and bank details | Monthly payroll is calculated in the system |
+| P2-4.2 | Teacher | Apply for leave and see remaining leave balance | I don't need to call HR or fill a paper form |
+| P2-4.3 | Admin | Approve or reject leave requests | Leave management is auditable |
+| P2-4.4 | Admin | Record staff attendance (check-in/check-out) | Payroll deductions for absences are accurate |
+| P2-4.5 | Admin | Set performance goals and record appraisal notes | Annual reviews have a data trail |
+
+**Schema note:** Phase 1 `users` table must include nullable HRMS fields (`salary`, `pay_cycle`, `bank_details_encrypted`) so Phase 2 adds columns without a data migration.
+
+---
+
+### Epic P2-5: Official WhatsApp Business API Migration
+
+**Trigger:** Wapi (unofficial bridge) is blocked or unreliable. Official API provides guaranteed delivery, read receipts, and rich message templates.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P2-5.1 | System | Send WhatsApp notifications via official API | Delivery is guaranteed and auditable |
+| P2-5.2 | School admin | Use school-branded WhatsApp sender name | Parents see "[School Name]" not a generic number |
+| P2-5.3 | System | Track delivery and read receipts per notification | Engagement data is accurate |
+
+**Migration note:** Phase 1 Wapi integration must be behind a feature flag / adapter interface so Phase 2 can swap the provider without touching notification logic.
+
+---
+
+### Epic P2-6: Offline-First Data Sync
+
+**Trigger:** Semi-urban and rural preschool markets have unreliable connectivity. Teachers cannot post when network drops.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P2-6.1 | Teacher | Create a post while offline | It uploads automatically when network returns |
+| P2-6.2 | Teacher | Take attendance offline | Records sync when connection is restored |
+| P2-6.3 | Parent | View cached posts when offline | I can see recent content without a connection |
+| P2-6.4 | System | Resolve conflicts when the same data is edited offline on two devices | No data is lost |
+
+**Technical approach:** WatermelonDB (React Native) for local-first storage with sync to the Laravel backend. Conflict resolution: last-write-wins for posts, server-authoritative for attendance.
+
+---
+
+### Epic P2-7: Extended Content — Quizzes, Library, Live Camera
+
+**User stories (high-level — detailed spec at Phase 2 planning):**
+
+| Story | Feature |
+|-------|---------|
+| P2-7.1 | Interactive quizzes — teachers assign, children complete on parent's phone |
+| P2-7.2 | Children's library — curated digital books and audio stories per age group |
+| P2-7.3 | Live camera / daycare view — parent can see classroom live stream during school hours |
+| P2-7.4 | Bus tracking — real-time GPS tracking of school bus, ETA notifications to parents |
+| P2-7.5 | Infirmary — health incident logging (injury, fever, medication) with parent notification |
+| P2-7.6 | Supplies / warehouse — consumable stock tracking for school supplies |
+
+---
+
+### Epic P2-8: On-Server ML Model for Milestone Suggestion
+
+**Trigger:** Phase 1 LLM costs for milestone tagging are ~$0.0003/post. At 10,000 posts/day, that's $3/day. A fine-tuned on-server model eliminates this.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P2-8.1 | System | Suggest NEP 2020 milestones from post caption using on-server model | AI cost per post approaches zero at scale |
+| P2-8.2 | Product team | Retrain the model quarterly on confirmed milestone tags | Suggestions improve over time |
+
+**Training data:** Phase 1 `post_milestones` table where `suggested_by_ai = true` AND `confirmed_by_teacher = true`. Minimum 10,000 confirmed tags before Phase 2 model training begins.
+
+---
+
+## 9. Phase 3 — Franchise and Global
+
+Phase 3 begins when: India PMF is confirmed (ARR > ₹1Cr, NPS ≥ 50). Franchise chain conversations should start Month 10 but deals close in Phase 3.
+
+---
+
+### Epic P3-1: White-Label and Franchise Chain Support
+
+**Trigger:** Eurokids, Kidzee, Bachpan, Podar Jumbo Kids — each with 1,000–1,200 centers — require per-chain branding.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P3-1.1 | Franchise chain admin | Apply chain-wide branding (logo, colors, name) | All centers under the chain look consistent |
+| P3-1.2 | Franchise chain admin | Remove all CadenceSprout branding | Parents see only the chain's brand |
+| P3-1.3 | Franchise chain admin | View engagement scores across all centers | I can identify underperforming centers chain-wide |
+| P3-1.4 | Individual center admin | Manage their center independently | Day-to-day ops don't require chain-level access |
+| P3-1.5 | System | Bill the franchise chain at a negotiated per-center rate | Enterprise pricing differs from individual school pricing |
+
+**Architecture note:** Phase 1 must use design tokens (not hardcoded hex values) for all brand colors. Phase 3 white-labeling replaces tokens per chain — no code changes required.
+
+---
+
+### Epic P3-2: Arabic Language and RTL UI (Dubai Market)
+
+**Trigger:** Dubai preschool market has similar dynamics to India — Seesaw is expensive. Arabic + RTL unlocks the GCC market.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P3-2.1 | Teacher | Use CadenceSprout in Arabic | I can work in my native language |
+| P3-2.2 | Parent | Receive updates in Arabic | I understand my child's progress |
+| P3-2.3 | System | Render all UI elements right-to-left | Arabic text and layout feels native, not mirrored |
+| P3-2.4 | AI caption system | Draft captions in Arabic | Teachers in Arabic-medium schools can post in Arabic |
+
+**Technical note:** RTL requires layout changes in React Native (`I18nManager.forceRTL(true)`) and React admin (`dir="rtl"` + CSS logical properties). This is a significant engineering effort — budget 4–6 weeks.
+
+---
+
+### Epic P3-3: CRM Integrations
+
+**Trigger:** Franchise chains use Salesforce, HubSpot, or Zoho for admissions pipeline management. CadenceSprout admissions data needs to flow into their CRM.
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P3-3.1 | School admin | Sync admissions inquiries to Salesforce/HubSpot/Zoho | My sales team works in one CRM |
+| P3-3.2 | School admin | Pull enrolled child data from the CRM | No double-entry between CRM and CadenceSprout |
+| P3-3.3 | System | Provide a webhook API for CRM integrations | Third-party CRM vendors can build integrations |
+
+---
+
+### Epic P3-4: Southeast Asia Expansion
+
+**Trigger:** Post India PMF. Indonesia, Vietnam, Philippines have similar market dynamics — Seesaw is expensive, WhatsApp is dominant, and preschool chains are underserved.
+
+**User stories (high-level):**
+
+| Story | Feature |
+|-------|---------|
+| P3-4.1 | Bahasa Indonesia language support |
+| P3-4.2 | Vietnamese language support |
+| P3-4.3 | Filipino (Tagalog) language support |
+| P3-4.4 | Local payment gateways (GoPay, VNPay, GCash) |
+| P3-4.5 | Data residency in SEA region (AWS ap-southeast-1) |
+| P3-4.6 | Local curriculum framework alignment (PAUD Indonesia, etc.) |
+
+---
+
+### Epic P3-5: Schema-Per-Tenant (Enterprise Isolation)
+
+**Trigger:** Large franchise chains with strict data isolation requirements (e.g., Eurokids requiring each center's data to be physically isolated for compliance or legal reasons).
+
+**User stories:**
+
+| Story | As a… | I want to… | So that… |
+|-------|--------|------------|----------|
+| P3-5.1 | Franchise chain legal team | Each center's data in a separate Postgres schema | A data breach at one center cannot expose others |
+| P3-5.2 | System | Run migrations across N schemas automatically | Adding a new feature doesn't require N manual migrations |
+| P3-5.3 | System | Provision a new schema when a center is onboarded | New centers are isolated from day one |
+
+**Note:** Row-level tenancy (Phase 1 model) is sufficient for 99% of customers. This epic exists only for franchise chains with specific compliance mandates. Do not build prematurely.
+
+---
+
+## 10. Success Metrics
 
 ### Phase 1 Launch Criteria (Month 10)
 
@@ -1993,4 +2199,4 @@ The following items from TODOS.md must be resolved before build begins. They are
 
 ---
 
-*This is a Phase 1 PRD only. Phase 2 and Phase 3 features are explicitly out of scope and listed in Section 7.*
+*This PRD covers Phase 1 (Sections 1–7, 10), Phase 2 (Section 8), and Phase 3 (Section 9). Phase 2 and Phase 3 epics are intentionally high-level — they will be detailed at the start of each phase based on Phase 1 learnings.*
