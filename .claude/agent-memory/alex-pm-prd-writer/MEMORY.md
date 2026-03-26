@@ -1,0 +1,3 @@
+- [Project: CadenceSprout](project_cadencesprout.md) — All-in-One Preschool OS for Indian preschools; Phase 1 PRD written 2026-03-26
+- [Tech Stack](project_tech_stack.md) — Laravel PHP 8.2 + PostgreSQL + React Native + React+Vite; all locked decisions
+- [User Personas](project_personas.md) — Three roles: Teacher (mobile), Parent (mobile + magic-link web), Admin/Principal (web dashboard)
