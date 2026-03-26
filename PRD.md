@@ -17,8 +17,9 @@
 4. [Screen Inventory](#4-screen-inventory)
 5. [Key API Contracts](#5-key-api-contracts)
 6. [Non-Functional Requirements](#6-non-functional-requirements)
-7. [Out of Scope — Phase 2 and Phase 3](#7-out-of-scope--phase-2-and-phase-3)
-8. [Success Metrics](#8-success-metrics)
+7. [Technology Architecture](#7-technology-architecture)
+8. [Out of Scope — Phase 2 and Phase 3](#8-out-of-scope--phase-2-and-phase-3)
+9. [Success Metrics](#9-success-metrics)
 
 ---
 
@@ -1616,7 +1617,274 @@ The Digital Personal Data Protection Act 2023 applies directly to CadenceSprout 
 
 ---
 
-## 7. Out of Scope — Phase 2 and Phase 3
+## 7. Technology Architecture
+
+### 7.1 Stack Decisions
+
+| Layer | Technology | Rationale |
+|-------|-----------|-----------|
+| **Backend API** | Laravel (PHP 8.2) + Sanctum + Horizon | Team already knows Laravel; ships Day 1 with no ramp-up. Sanctum handles mobile token auth; Horizon manages async AI queues natively. |
+| **Database** | PostgreSQL + Row Level Security | RLS enforces `school_id` isolation at the DB layer — a query without tenant context returns 0 rows, making cross-tenant data leaks structurally impossible. |
+| **Queue / background jobs** | Laravel Horizon + Redis | Three priority queues for AI work: `ai-fast` (caption drafting, <3s), `ai-slow` (face recognition, <30s), `ai-batch` (portfolio generation, nightly). |
+| **Mobile app** | React Native (iOS + Android) | One codebase for teacher app + parent app. Team has existing React Native expertise. |
+| **Web admin dashboard** | React + Vite | Team knows React JS. SSR not needed for a B2B internal dashboard — Next.js adds complexity with no benefit here. |
+| **Media storage** | AWS S3 (ap-south-1) + CloudFront CDN | India data residency. Pre-signed URL pattern: API issues the URL, client uploads directly to S3. Media never passes through the API server. |
+| **Real-time feed** | Pusher + Laravel Echo | When a teacher posts, Pusher broadcasts to parents of that class who are online. Native Laravel integration. Free tier covers pilot phase. |
+| **AI / LLM gateway** | OpenRouter (multi-model routing) | Routes caption drafting to cheapest model that meets quality bar. Gemini Flash (~$0.0001/call) for standard captions; escalates to GPT-4o-mini (~$0.0003/call) if quality score < 7. 5–10× cheaper than locking into a single provider. |
+| **On-server ML** | Fine-tuned small model (Phase 2) | Milestone suggestion engine trained on NEP 2020 taxonomy using Phase 1 usage data. Phase 1 uses LLM for this. |
+| **Face recognition** | AWS Rekognition | Only viable server-side face recognition for ages 3–6. ML Kit does face *detection* only — not recognition. Called only after explicit DPDP consent. |
+| **Notifications** | Wapi (WhatsApp) → MSG91 (SMS fallback) | Wapi is an unofficial WhatsApp gateway (~95% uptime). MSG91 triggers on Wapi failure. Migrate to official WhatsApp Business API post-launch. |
+| **CI/CD** | GitHub Actions | Standard: lint → test → build → deploy. |
+
+---
+
+### 7.2 System Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                               │
+│                                                                    │
+│  React Native App              React + Vite Admin                │
+│  (Teacher + Parent)            (Principal / Admin)               │
+│  iOS + Android                 Web Browser                       │
+└─────────────────────┬────────────────────────┬───────────────────┘
+                      │                        │
+                      ▼                        ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                   LARAVEL REST API (/api/v1/*)                    │
+│                                                                    │
+│  Auth:         Sanctum tokens (mobile) + session (web)           │
+│  Multi-tenant: school_id middleware → Postgres RLS               │
+│  Versioning:   /api/v1/* — breaking changes go to /api/v2/*      │
+└──────────┬───────────────────────────────────┬───────────────────┘
+           │                                   │
+           ▼                                   ▼
+┌──────────────────┐             ┌─────────────────────────────────┐
+│   PostgreSQL     │             │      LARAVEL HORIZON QUEUES      │
+│   + RLS policy   │             │                                   │
+│   + Redis        │             │  ai-fast   (3 workers, <3s)      │
+│                  │             │    ├─ CaptionDraftJob            │
+│   school_id set  │             │    └─ MilestoneTagJob            │
+│   on every DB    │             │                                   │
+│   connection;    │             │  ai-slow   (2 workers, <30s)     │
+│   RLS enforces   │             │    └─ FaceRecognitionJob          │
+│   automatically  │             │                                   │
+└──────────────────┘             │  ai-batch  (1 worker, nightly)   │
+                                 │    └─ PortfolioGenerateJob        │
+                                 └──────────────┬──────────────────┘
+                                                │
+                                 ┌──────────────▼──────────────────┐
+                                 │        EXTERNAL SERVICES         │
+                                 │                                   │
+                                 │  OpenRouter ──► Gemini Flash     │
+                                 │      └─ escalate ► GPT-4o-mini  │
+                                 │                                   │
+                                 │  AWS Rekognition (face ID)       │
+                                 │  AWS S3 ap-south-1 + CloudFront  │
+                                 │  Pusher (real-time feed)         │
+                                 │  Wapi ──► MSG91 (notifications)  │
+                                 └─────────────────────────────────┘
+```
+
+---
+
+### 7.3 Multi-Tenancy Model
+
+Every table has a `school_id` column. PostgreSQL Row Level Security enforces it at the database connection level — not in application code.
+
+```
+Middleware chain on every authenticated request:
+  1. auth:sanctum          → validate token
+  2. SetTenantFromToken    → extract school_id from user record
+  3. PostgresRLS           → SET app.current_school_id = {school_id}
+                              RLS policy runs on EVERY query
+
+Result: a query that omits a school_id filter returns 0 rows.
+Cross-tenant data leaks are structurally impossible.
+```
+
+DPDP implication: data deletion scoped to `school_id` — a single scoped delete removes all data cleanly with no orphaned records.
+
+---
+
+### 7.4 Data Model (Core Tables)
+
+```
+schools         id, name, logo_url, brand_color, subdomain
+
+users           id, school_id, role (teacher|parent|admin),
+                name, phone, email, otp_secret
+
+children        id, school_id, name, dob, class_id,
+                face_embedding_s3_key, dpdp_consent_at
+
+classes         id, school_id, name, academic_year, teacher_id
+
+parent_child    parent_id, child_id, relationship
+
+posts           id, school_id, teacher_id, class_id,
+                media_urls (jsonb), caption, ai_caption_draft,
+                caption_edited_by_teacher, ai_model_used,
+                ai_cost_usd, status (draft|posted|archived)
+
+post_children   post_id, child_id, confidence_score,
+                confirmed_by_teacher
+
+milestones      id, domain, code, title, description,
+                age_range_months  (~80 rows, NEP 2020 pre-loaded)
+
+post_milestones post_id, milestone_id, suggested_by_ai,
+                confirmed_by_teacher
+
+engagement_     school_id, week_starting, score_pct,
+snapshots       active_parents, total_parents
+
+magic_link_     id, parent_id, child_id, token_hash,
+tokens          expires_at, used_count, max_uses (default 10)
+```
+
+Key indexes: `(school_id, class_id, created_at DESC)` on posts, `(child_id, post_id)` on post_children.
+
+---
+
+### 7.5 AI Pipeline — Caption Drafting
+
+```
+Teacher selects photo → taps POST
+         │
+         ▼
+POST /api/v1/posts  (draft record created instantly — non-blocking)
+         │
+         ▼  CaptionDraftJob → 'ai-fast' queue
+         │
+         ▼
+OpenRouter quality router:
+  Input: photo S3 key + confirmed child names + class + time of day
+  │
+  ├─ Step 1: Gemini Flash (~$0.0001/call)
+  │    Quality score (0–10):
+  │      +2 child name present
+  │      +2 length > 10 words
+  │      +3 no hallucinated details
+  │      +3 warm tone (sentiment check)
+  │
+  ├─ Score ≥ 7 → use draft
+  └─ Score < 7 → escalate to GPT-4o-mini (~$0.0003/call)
+         │
+         ▼
+Draft pushed via Pusher to teacher's compose screen
+Teacher reviews → edits if needed → posts
+Failure: timeout or both models fail → empty caption box,
+         placeholder "What happened in this moment?" — post never blocked
+```
+
+---
+
+### 7.6 AI Pipeline — Face Recognition
+
+```
+Post created → FaceRecognitionJob → 'ai-slow' queue (async)
+         │
+         ▼
+DPDP gate: child.dpdp_consent_at IS NOT NULL?
+  NO  → skip entirely. Post goes live untagged. ✓
+  YES → continue
+         │
+         ▼
+AWS Rekognition SearchFacesByImage
+  Collection: 'school_{school_id}'
+  (built at enrollment from reference photo)
+         │
+  confidence > 90%   → suggest tag (pre-checked)
+  confidence 70–90%  → suggest tag (teacher must confirm)
+  confidence < 70%   → no suggestion
+         │
+         ▼
+Pusher notifies teacher → confirms or dismisses tags
+Only confirmed tags visible to parents
+```
+
+---
+
+### 7.7 Magic-Link Parent Onboarding
+
+```
+Admin adds parent phone → signed JWT generated
+  {parent_id, child_id, school_id, exp: 24h}
+         │
+         ▼
+Wapi WhatsApp: "Rohan had a great morning! → [link]"
+         │
+         ▼
+Parent taps → browser opens → guest session (no login)
+Feed-first: post visible immediately
+         │
+  visits 1–3: token auth (no prompt)
+  visit 4+:   OTP phone prompt
+         │
+         ▼
+OTP login → full Sanctum session
+DPDP consent screen (once per parent per child)
+  ☑ Share daily updates with you only
+  ☑ Recognise [child] in class photos (AI)
+  ☑ Store data in India (deleted when you leave)
+         │
+         ▼
+Notification preferences → feed
+```
+
+---
+
+### 7.8 Media Pipeline
+
+Client-side compression before upload — large files never hit the API server.
+
+```
+Teacher selects media
+  Photo → react-native-image-resizer → ≤ 500KB
+  Video → react-native-video-compress → ≤ 10MB
+         │
+         ▼
+GET /api/v1/media/upload-url  (Laravel issues pre-signed S3 URL)
+         │
+         ▼
+Client uploads directly to S3 (bypasses API server)
+         │
+         ▼
+PATCH /api/v1/posts/{id}  (upload complete, S3 key stored)
+CloudFront CDN serves media to parents
+
+S3 Lifecycle (automatic):
+  Day   0–90:   Standard, full resolution
+  Day  90–365:  Lambda recompresses to 480p (~50% size reduction)
+  Day 365+:     Glacier Deep Archive ($0.00099/GB/month)
+  Portfolio PDFs: Standard forever (thumbnails only)
+```
+
+---
+
+### 7.9 Cost Model (Unit Economics)
+
+Per-school per month at 50 children, 5 classes, 3 teachers:
+
+| Cost item | Monthly cost (USD) |
+|-----------|--------------------|
+| AWS S3 + CloudFront CDN | ~$0.54 |
+| AWS Rekognition (face recognition) | ~$4.50 |
+| OpenRouter (caption drafting) | ~$0.90 |
+| MSG91 SMS fallback | ~$2.70 |
+| Pusher, Redis, PostgreSQL (amortised) | ~$0.80 |
+| **Total per school / month** | **~$9.50 (~₹790)** |
+
+Revenue at ₹20/child × 50 children = **₹1,000/school/month → ~21% gross margin at launch.**
+
+Primary cost lever: Rekognition ($4.50) is 47% of cost. Phase 2 optimisation (batch processing + on-server ML model) reduces cost to ~$3–4/school/month → **60–70% gross margin**.
+
+**Pricing decision:** Do not fix final pricing until Month 3 when real usage costs are confirmed from pilot data. The model supports ₹50/child/month at 60–70% margin post-Phase 2 optimisation.
+
+---
+
+## 8. Out of Scope — Phase 2 and Phase 3
 
 The following items are explicitly NOT in Phase 1. They must not be built, specced in stories, or implied in acceptance criteria.
 
