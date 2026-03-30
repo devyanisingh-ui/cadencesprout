@@ -15,6 +15,11 @@
 2. [User Personas](#2-user-personas)
 3. [Phase 1 Epics and User Stories](#3-phase-1-epics-and-user-stories)
 4. [Screen Inventory](#4-screen-inventory)
+   - 4.1 Teacher App (React Native — iOS + Android)
+   - 4.2 Parent App (React Native — iOS + Android)
+   - 4.3 Admin / Principal Web Dashboard (React + Vite)
+   - 4.4 Teacher Web (Browser — React + Vite)
+   - 4.5 Parent Web (Browser)
 5. [Key API Contracts](#5-key-api-contracts)
 6. [Non-Functional Requirements](#6-non-functional-requirements)
 7. [Technology Architecture](#7-technology-architecture)
@@ -596,6 +601,30 @@ This section maps every screen in the product to its role, purpose, route, and k
 
 ---
 
+**Screen T-0: Teacher Login**
+- Route: `/login` (native screen, pre-auth)
+- Entry point: App cold launch (unauthenticated), logout redirect
+- Purpose: Authenticate teacher via phone number + password (Sanctum token auth); shared entry point that detects role and redirects accordingly
+
+Key elements:
+- School logo / CadenceSprout wordmark centered
+- Phone number input field (numeric keypad, +91 prefix)
+- Password input field (masked, show/hide toggle)
+- [Log In] primary button (sage green, full width)
+- "Forgot password?" link → phone number + OTP reset flow
+- Post-login redirect logic: role = teacher → T-1 Home Feed; role = parent → P-3 Parent Feed; role = admin → A-1 Dashboard
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Default | Screen loads | Empty phone + password fields, Log In button |
+| Typing | Input active | Keyboard visible, field highlighted |
+| Loading | Log In tapped | Button shows spinner, inputs disabled |
+| Error | Invalid credentials | Inline error below password: "Incorrect phone number or password." — inputs remain filled |
+| Success | Valid credentials | Brief success flash, redirect to T-1 |
+
+---
+
 **Screen T-1: Home Feed (Class Feed)**
 - Route: `/` (default tab)
 - Entry point: App launch, bottom nav tab 1
@@ -648,6 +677,43 @@ States:
 
 ---
 
+**Screen T-2A: Manual Child Tag Picker**
+- Route: Bottom sheet / modal overlay from T-2 Post Composer
+- Entry point: Tap "Add children manually" from T-2 or tap an unconfirmed chip
+- Purpose: Allow teachers to manually search, select, confirm, or remove child tags when AI suggestion is absent or incorrect
+
+Key elements:
+- Modal header: "Tag children in this post"
+- Search input: placeholder "Search by child name"
+- Class roster list:
+  - Child photo or initial avatar
+  - Child name
+  - Selection checkbox or chip state
+- Selected children summary row pinned above footer
+- [Done] primary button
+- [Clear all] secondary text action
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Loading | Modal opens, class roster fetching | Skeleton child rows |
+| Default | Roster loaded | Search + selectable list of all children in class |
+| Search active | Query entered | Filtered roster list |
+| No results | Search query has no matches | "No children found for [query]." |
+| Selection made | One or more children selected | Selected summary row + Done button enabled |
+
+Interactions & Behaviors:
+- Selecting a child immediately adds them to the selected summary row
+- Deselecting a child removes the chip from T-2 after Done is tapped
+- [Done] closes the modal and returns selected tags to T-2
+- [Clear all] removes all selected children after confirmation if 2 or more are selected
+
+Data Requirements:
+- Class roster: `child_id`, `name`, `photo_url`, `class_id`
+- Current selected tags from T-2
+
+---
+
 **Screen T-3: Post Detail**
 - Route: `/post/:id`
 - Entry point: Tap post card on T-1
@@ -697,6 +763,54 @@ Key elements:
 
 ---
 
+**Screen T-5A: Child Detail**
+- Route: `/child/:id`
+- Entry point: Tap child row on T-5 Class Roster
+- Purpose: Give the teacher a single-child overview including profile, parent contact information, milestone summary, and recent posts
+
+Key elements:
+- Child header:
+  - Child photo
+  - Child name
+  - Date of birth / age
+  - Class name
+- Parent section:
+  - Parent/guardian names
+  - Relationship labels
+  - Phone numbers
+  - Parent status badges (Active / Invited / Not invited)
+- Quick actions:
+  - Call parent
+  - Message parent on WhatsApp
+  - View milestones
+- Milestone summary card:
+  - Domain-wise progress snapshot
+  - "View full milestone tracker" CTA → T-6
+- Recent posts section:
+  - Latest 3-5 posts where child is tagged
+  - Tap post → T-3
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Loading | Child detail opens | Skeleton header, parent rows, and post cards |
+| No recent posts | Child has not been tagged in any post yet | "No posts for this child yet." |
+| No parent linked | Child exists but parent record not added | "No parent contact added yet." + prompt to contact admin |
+| Normal | Child data available | Full profile + parent section + milestone summary + recent posts |
+
+Interactions & Behaviors:
+- Tapping View milestones deep-links into T-6 for the same child
+- WhatsApp action opens the default WhatsApp deep link with the parent's phone number pre-filled
+- Recent posts are sorted reverse-chronologically
+
+Data Requirements:
+- Child profile: `child_id`, `name`, `dob`, `age`, `photo_url`, `class_name`
+- Parent links: `parent_id`, `name`, `relationship`, `phone`, `invite_status`
+- Milestone summary by domain
+- Recent tagged posts
+
+---
+
 **Screen T-6: Milestone Tracker (per child)**
 - Route: `/child/:id/milestones`
 - Entry point: Tap child in Roster → Milestones tab
@@ -716,21 +830,183 @@ States:
 
 ---
 
+**Screen T-6A: Milestone Picker**
+- Route: Modal overlay from T-6 or T-2 Post Composer
+- Entry point: Tap Add milestone button from T-6 or "Add milestones (optional)" from T-2
+- Purpose: Let teachers browse and attach milestones from the NEP 2020 taxonomy without memorising the framework
+
+Key elements:
+- Modal header: "Select milestone"
+- Domain tabs: Physical | Cognitive | Language | Social-Emotional | Aesthetic
+- Search field: "Search milestones"
+- Milestone list rows:
+  - Milestone title
+  - Domain
+  - Age range
+  - Selection control
+- Selected milestones tray pinned above footer
+- [Add selected milestones] primary button
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Loading | Modal opens, taxonomy fetching | Skeleton milestone rows |
+| Default | Taxonomy loaded | Domain tabs + milestone rows |
+| Search active | Query entered | Filtered milestone list |
+| No results | Search query has no matches | "No milestones found for [query]." |
+| Selection made | One or more milestones selected | Selected tray visible + Add button enabled |
+
+Interactions & Behaviors:
+- Domain tabs filter the list instantly without closing the modal
+- Teachers can multi-select milestones before confirming
+- Added milestones return to the source screen as chips or list items
+
+Data Requirements:
+- Taxonomy source: `milestone_id`, `domain`, `title`, `description`, `age_range_months`
+- Current selected milestone IDs
+
+---
+
 **Screen T-7: Profile / Settings**
 - Route: `/profile` (bottom nav tab 4)
 - Entry point: Bottom nav
-- Purpose: Teacher account settings, notification preferences, logout
+- Purpose: Teacher account settings, notification behavior, app preferences, support access, and logout
 
 Key elements:
-- Teacher name and photo
-- School name
-- Notification preferences toggle
-- App version
-- [Log Out] button
+- Top app bar:
+  - Center title: "Profile & Settings"
+  - Right-side edit icon for profile editing
+- Profile card:
+  - Teacher photo or initial avatar
+  - Teacher full name
+  - Role + class assignment (e.g. "Class Teacher · LKG A")
+  - School name
+- Notifications section:
+  - New parent comment toggle
+  - Daily reminder to post toggle
+  - Attendance reminder toggle
+- App Preferences section:
+  - Language row (Phase 1: English only; future language selector hidden until enabled)
+  - Media upload quality row (Auto / Data Saver / High)
+  - Clear cached media row
+- Permissions section:
+  - Camera roll permission status
+  - Push notification permission status
+  - "Open system settings" action when required permissions are denied
+- Help & About section:
+  - Contact school admin
+  - Privacy policy link
+  - App version + build number
+- Account section:
+  - [Log Out] button (full-width, destructive styling)
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Loading | Screen opens, profile/preferences fetching | Skeleton profile card + skeleton settings rows |
+| Default | Data loaded successfully | Profile card + grouped settings rows + Log Out button |
+| Permission denied | Camera roll or notifications denied at OS level | Inline warning row with amber icon + "Open Settings" action |
+| Save success | Toggle or preference updated | Toast: "Settings updated." |
+| Save failed | API/network failure on settings update | Inline error on affected row + Retry action |
+| Logged out | Logout confirmed | Redirect to T-0 Teacher Login |
+
+Interactions & Behaviors:
+- Edit icon opens profile edit sub-screen or bottom sheet
+  - Editable: display name, profile photo
+  - Read-only: school name, assigned class
+- Notification toggles save optimistically, then reconcile with server response
+- Tapping camera roll or notification permission row opens native system settings if permission is denied
+- Tapping Language opens a selector sheet; in Phase 1 only English is selectable
+- Tapping Clear cached media opens a confirmation sheet before clearing local media cache
+- Tapping Log Out opens confirmation sheet: "Log out of CadenceSprout on this device?"
+
+Data Requirements:
+- Teacher profile: `name`, `avatar_url`, `role`, `class_name`, `school_name`
+- Preferences:
+  - `notify_parent_comments`
+  - `notify_daily_post_reminder`
+  - `notify_attendance_reminder`
+  - `language`
+  - `media_upload_quality`
+- Client permission state:
+  - photo library permission
+  - push notification permission
+- App metadata:
+  - app version
+  - build number
 
 ---
 
 ### 4.2 Parent App (React Native — iOS + Android)
+
+---
+
+**Screen P-0: Parent App Phone Number Entry / OTP Request**
+- Route: `/auth/login` (native screen, pre-auth)
+- Entry point: App cold launch before authentication; tap "Get the app" from magic-link web flow
+- Purpose: Start parent authentication using phone number and OTP
+
+Key elements:
+- School logo / CadenceSprout wordmark centered
+- Intro copy: "See every update from your child's day"
+- Phone number input with +91 prefix
+- [Send OTP] primary button
+- Secondary link: "Open via WhatsApp link instead" (for users who arrived without a valid link)
+- Legal footnote: "By continuing, you agree to receive a one-time verification code."
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Default | Screen loads | Empty phone number field, Send OTP button disabled |
+| Typing | Number entered | Send OTP enabled when number is valid |
+| Loading | Send OTP tapped | Button spinner, field disabled |
+| Invalid number | Validation fails | Inline error: "Enter a valid phone number." |
+| OTP sent | API success | Brief success message then redirect to P-0A |
+| Send failed | SMS provider or API failure | Error banner + Retry action |
+
+Interactions & Behaviors:
+- Numeric keypad opens on input focus
+- Valid Indian phone number format required before enabling Send OTP
+- Successful submit navigates to P-0A and carries masked phone number context
+
+Data Requirements:
+- Phone number input
+- OTP request API result
+
+---
+
+**Screen P-0A: Parent App OTP Verification**
+- Route: `/auth/verify`
+- Entry point: Successful OTP request from P-0
+- Purpose: Verify parent identity and complete login before consent and feed access
+
+Key elements:
+- Header showing masked phone number
+- 6-digit OTP input
+- Countdown timer for resend eligibility
+- [Verify OTP] primary button
+- [Resend code] secondary action
+- [Change phone number] link → back to P-0
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Default | Screen opens | Empty 6-digit OTP input, Verify button disabled |
+| Typing | Digits entered | Verify button enabled once all 6 digits are filled |
+| Loading | Verify tapped | Button spinner, inputs disabled |
+| Invalid OTP | Server returns 401 | Inline error: "That code is incorrect or expired." |
+| Resend available | Timer reaches 0 | Resend code link becomes active |
+| Success | OTP valid | Redirect to P-2 if consent required, else P-3 |
+
+Interactions & Behaviors:
+- Auto-advance between OTP fields as each digit is typed
+- Paste of full 6-digit code populates all fields
+- Successful verification stores the Sanctum token securely on device
+
+Data Requirements:
+- Masked phone number
+- OTP verification API result
+- `dpdp_consent_required` flag from auth response
 
 ---
 
@@ -1020,6 +1296,365 @@ Key elements:
 - Password field
 - [Log In] button
 - "Forgot password?" link → phone number + OTP reset flow
+
+---
+
+### 4.4 Teacher Web (Browser — React + Vite)
+
+Teachers who access CadenceSprout from a laptop or desktop browser receive a responsive web experience. Primary viewport: 1280px. Tablet viewport: 768px. Layout adapts from the mobile app screens but takes advantage of the wider canvas — sidebar navigation replaces the bottom tab bar, multi-column layouts replace single-column stacks, and drag-and-drop replaces tap-based media selection.
+
+---
+
+**Screen TW-1: Teacher Web Login**
+- Route: `https://{school}.cadencesprout.com/login` or `cadencesprout.com/login`
+- Entry point: Direct URL, unauthenticated redirect from any teacher web route
+- Purpose: Authenticate teacher via phone number + password (Sanctum token); shared entry point — role detected post-login, redirect to appropriate home screen
+
+Key elements:
+- Centered card layout (max-width 420px) on warm cream background
+- CadenceSprout wordmark + school logo above card
+- Phone number field (+91 prefix, numeric)
+- Password field (masked, show/hide toggle icon)
+- [Log In] primary button (sage green, full width)
+- "Forgot password?" link → OTP reset flow
+- Post-login redirect: role = teacher → TW-2; role = parent → PW-2; role = admin → A-1
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Default | Page loads | Empty form, disabled Log In button |
+| Filled | Inputs populated | Log In button enabled (sage green) |
+| Loading | Log In clicked | Button spinner, inputs disabled |
+| Error | Invalid credentials | Red inline error below password field: "Incorrect phone number or password." |
+| Success | Valid credentials | Redirect to TW-2 Home Feed |
+
+---
+
+**Screen TW-2: Teacher Web Home Feed**
+- Route: `/feed`
+- Entry point: Post-login redirect, left sidebar nav link
+- Purpose: Class-level post feed on wider canvas; primary daily landing screen for web-using teachers
+
+Key elements:
+- Left sidebar (240px): school logo, nav links (Feed, Attendance, Roster, Milestones, Profile), teacher avatar + name at bottom
+- Main content area: 2-column grid of post cards at 1280px; single column at 768px
+- Post card: full-bleed 4:3 photo, caption in Fraunces font, child tag chips, time ago, parent view count badge
+- [+ New Post] button in sidebar (primary, sage green) — opens TW-3 Post Composer
+- Class selector dropdown in header (if teacher has multiple classes)
+- Pull-to-refresh equivalent: refresh icon button in header
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Loading | Page loads | Skeleton cards (2-column) — warm cream pulsing rectangles |
+| Empty | No children added | "Add your students to get started." + Add Students button |
+| No posts today | Posts exist but not today | Past posts visible, date section header: "No posts yet today" |
+| Normal | Posts exist | Reverse-chronological 2-column grid |
+| Offline | No network | Top banner: "You're offline — showing saved content" |
+
+---
+
+**Screen TW-3: Teacher Web Post Composer**
+- Route: `/post/new` (full page or large modal overlay)
+- Entry point: [+ New Post] button on TW-2
+- Purpose: Compose and publish a class post with photo upload, AI caption, child tags, and milestone tags — desktop-optimised with drag-and-drop
+
+Key elements:
+- Two-panel layout (1280px): left panel = media upload/preview; right panel = caption, tags, controls
+- Left panel: drag-and-drop upload zone (dashed border, sage green accent) + "Browse files" button; supports 1-4 photos or 1 video; photo preview grid (4:3, max 4 tiles)
+- Right panel: caption textarea (Fraunces font, AI-drafted or manual); ✨ AI indicator when drafting; child tag chip row (confirmed: solid sage green; pending: dashed grey); "Add children manually" link; "Add milestones (optional)" expandable row; class selector; [Publish Post] primary button
+- Keyboard shortcut: Cmd/Ctrl + Enter to publish
+- Discard: [Cancel] link navigates back to TW-2
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| No media | Composer opens | Drag-and-drop zone prominent, right panel disabled |
+| Media selected | File dropped / browsed | Photo preview renders, AI caption drafting begins, right panel enabled |
+| AI drafting | Photo uploaded | Right panel caption area shows shimmer: "Drafting caption..." |
+| AI caption ready | < 3 seconds | Caption populates in Fraunces italic + ✨ icon |
+| Face recognition pending | Photo uploaded | Child chips show grey/dashed "Identifying..." |
+| Face recognition complete | Rekognition returns | Confirmed chips solid, low-confidence chips dashed |
+| Upload in progress | Publish clicked | Progress bar across top of composer; button disabled |
+| Upload failed | Network drop | Toast: "Upload failed. Click to retry." |
+
+---
+
+**Screen TW-4: Teacher Web Attendance**
+- Route: `/attendance`
+- Entry point: Left sidebar nav
+- Purpose: Daily attendance marking; desktop table view makes it easy to mark multiple children in one scan
+
+Key elements:
+- Date header with back-navigation arrows (mark previous days, edit until midnight)
+- Attendance table: columns = Child Photo | Child Name | Present | Absent | Absence Reason (optional)
+- Each row has Present / Absent radio-style toggle (click to toggle)
+- Bulk action: [Mark All Present] button above table
+- Optional absence reason: inline dropdown per absent child (Sick / Family reason / Other)
+- [Submit Attendance] primary button (bottom of table, sticky on scroll)
+- Submission confirmation banner: "Attendance submitted for [date]" (sage green)
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Not yet taken | Page loads, no submission today | "Take today's attendance." prominent header, all rows unset |
+| In progress | Marking in progress | Rows updating, Submit button enabled once all marked |
+| Submitted | Submit clicked | Confirmation banner, table becomes read-only (edit option remains until midnight) |
+| Past date | Back-nav to prior date | Shows historical record, read-only if past midnight cutoff |
+
+---
+
+**Screen TW-5: Teacher Web Class Roster**
+- Route: `/roster`
+- Entry point: Left sidebar nav
+- Purpose: View and manage all children in the teacher's class; see parent contact info and status
+
+Key elements:
+- Search bar (filters by child name or parent name)
+- Roster table: columns = Photo | Child Name | Age | Parent Name(s) | Parent Status | Actions
+- Parent status badges: Active (sage green) | Invited (amber) | Not Invited (grey)
+- Row click → child detail drawer (slides in from right): child photo, DOB, parent phone numbers, milestone summary, recent posts
+- [Add Child] button (if teacher has admin rights — otherwise hidden)
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Loading | Page loads | Skeleton table rows |
+| Empty | No children added | "No children in this class yet." + prompt to contact admin |
+| Normal | Children exist | Full table |
+| Search active | Query typed | Filtered rows, "No results for [query]" if no match |
+
+---
+
+**Screen TW-6: Teacher Web Milestone Tracker (per child)**
+- Route: `/roster/:child_id/milestones`
+- Entry point: Child row click on TW-5 → Milestones tab in detail drawer
+- Purpose: Per-child milestone view; desktop allows seeing multiple domains side-by-side
+
+Key elements:
+- Child header: photo, name, class, age
+- Domain tab row: Physical | Cognitive | Language | Social-Emotional | Aesthetic
+- Per-domain: milestone list (milestone name, age range, achieved/not yet status, date observed, link to source post)
+- [Add Milestone] button → opens NEP 2020 taxonomy picker modal
+- Progress summary bar per domain (e.g., "4 of 16 milestones observed")
+- Side-by-side 2-column domain layout at 1280px; single column at 768px
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| No milestones | New child | "Milestones will appear here as you observe them in class." |
+| Milestones present | Posts with milestone tags exist | Domain-grouped lists, achieved milestones highlighted in sage green |
+| Loading | Page loads | Skeleton milestone rows |
+
+---
+
+**Screen TW-7: Teacher Web Profile / Settings**
+- Route: `/profile`
+- Entry point: Left sidebar nav
+- Purpose: Manage teacher account details, browser preferences, notification behavior, and logout from the web experience
+
+Key elements:
+- Two-column layout at desktop:
+  - Left: profile summary card with teacher avatar, name, role, class, school
+  - Right: grouped settings panels
+- Settings panels:
+  - Notifications: parent comment alerts, daily posting reminder, attendance reminder
+  - Preferences: language, upload quality default
+  - Permissions/help: browser notification status, privacy policy, contact admin
+  - Account: [Log Out]
+- App/browser version and environment metadata in About section
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Loading | Page opens | Skeleton profile card + skeleton setting panels |
+| Default | Data loads | Profile summary + editable settings panels |
+| Browser notifications blocked | Permission denied in browser | Warning banner + "Enable in browser settings" guidance |
+| Save success | Setting updated | Inline success toast |
+| Save failed | API/network failure | Inline error on affected control |
+
+Interactions & Behaviors:
+- Setting toggles save optimistically
+- Notification permission row reflects browser-native permission state
+- Log Out opens confirmation modal before ending session
+
+Data Requirements:
+- Teacher profile
+- Web preference settings
+- Browser notification permission state
+- App version/build metadata
+
+---
+
+### 4.5 Parent Web (Browser)
+
+Parents receive a web view either via a WhatsApp magic-link (no login required) or after completing OTP login. The web experience is optimised for mobile browsers first (parents following a WhatsApp link open it on their phone) but is also fully usable on desktop. Primary viewport: 375px (mobile browser); secondary: 768px (tablet); tertiary: 1280px (desktop).
+
+---
+
+**Screen PW-1: Parent Web Magic-Link Feed**
+- Route: `https://cs.app/f?t={signed_jwt}` (web, no install required)
+- Entry point: WhatsApp link tap, SMS link tap
+- Purpose: Show parent their child's most recent post immediately without any login friction; gateway to converting to full app install
+
+Key elements:
+- School logo + "Powered by CadenceSprout" header (max-height 56px)
+- Most recent post: full-bleed 4:3 photo, caption in Fraunces font, child name tag chip
+- ❤️ reaction button (no login required for first reaction; tap records reaction server-side)
+- Scroll down reveals older posts (paginated, 10 per page)
+- Soft install banner (dismissible, appears after 3 page views): "Get the app for all of [child name]'s updates" — banner, never a blocking modal
+- Footer: "Secured by CadenceSprout · Privacy Policy"
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Valid token, first visit | Link tapped | Full post feed, no login prompt |
+| Valid token, 3+ views | used_count ≥ 3 | Soft install banner appears at top (dismissible) |
+| No posts yet | Class exists but no posts | "Your child's teacher hasn't posted yet. Check back soon!" — warm illustration |
+| Expired token | expires_at past or used_count > 10 | "This link has expired. Ask your school to send a new one." + WhatsApp school link (410 page) |
+| Loading | Page loads | Full-bleed skeleton card pulsing |
+
+---
+
+**Screen PW-2: Parent Web Full Feed (After OTP Login)**
+- Route: `https://cs.app/feed` (authenticated web session)
+- Entry point: OTP login completion, magic-link "Get full history" CTA
+- Purpose: Full chronological feed of all posts where the parent's child is tagged; persistent web session post-login
+
+Key elements:
+- Header: school logo, "Good morning, [Parent name]" greeting, notification bell icon
+- Feed: full-bleed post cards (4:3 photos, Fraunces captions, child tags, time ago, ❤️ reaction)
+- Bottom nav (mobile browser): Feed | Milestones | Portfolio | Profile
+- Top nav (desktop): inline nav links in header
+- Cursor-based infinite scroll pagination
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Loading | Page loads | Skeleton cards (warm cream pulsing rectangles) |
+| Empty | No posts yet | "Your child's first update will appear here soon." — no CTA, warm illustration |
+| No posts today | Posts exist but not today | Past posts visible; "All quiet so far today. Check back after morning circle!" section header |
+| Network error | Connection lost | "Couldn't load — check your connection." + Retry button |
+| Normal | Posts exist | Reverse-chronological feed |
+
+---
+
+**Screen PW-3: Parent Web Post Detail**
+- Route: `https://cs.app/post/:id`
+- Entry point: Tap post card on PW-1 or PW-2
+- Purpose: Full-screen post view with photo, caption, milestone tags, and reaction/comment interaction
+
+Key elements:
+- Full-bleed photo (edge-to-edge on mobile, max-width 800px centered on desktop)
+- Caption in Fraunces font (large, warm, editorial)
+- Child name tag chip (sage green)
+- Milestone tags (soft label chips, non-interactive display)
+- ❤️ reaction button + count
+- Comment input field (text, send on Enter/tap)
+- Comment thread (parent comment + any teacher reply)
+- Posted timestamp + school logo
+- [Back to feed] back navigation
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Loading | Page loads | Blurred photo placeholder + skeleton text |
+| Normal | Post loaded | Full photo + caption + interactions |
+| Photo gallery | Multiple photos | Horizontal swipe carousel (mobile); thumbnail strip (desktop) |
+| Post not found | Invalid post ID | "This post is no longer available." with back to feed link |
+
+---
+
+**Screen PW-4: Parent Web Milestone Progress**
+- Route: `https://cs.app/milestones`
+- Entry point: Bottom nav (mobile) / header nav (desktop); notification tap for milestone achievement
+- Purpose: Visual overview of child's developmental milestone progress by NEP 2020 domain
+
+Key elements:
+- Child name + class header
+- Domain cards (5 domains: Physical | Cognitive | Language | Social-Emotional | Aesthetic): each card shows domain name, icon, progress bar, and "X of Y milestones observed"
+- Expanded domain view (click/tap card): milestone list — milestone name, age range, achieved status (sage green checkmark or grey dot), date observed, link to post where observed
+- Achieved milestone taps through to the post where the milestone was logged
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| No milestones | Nothing logged yet | "Milestones will appear here as teachers observe them in class." — educational, no CTA |
+| Some achieved | Partial progress | Mixed achieved (sage green) and not yet (grey) milestones |
+| Loading | Page loads | Skeleton domain cards |
+
+---
+
+**Screen PW-5: Parent Web Profile / Settings**
+- Route: `https://cs.app/profile`
+- Entry point: Bottom nav Profile tab on mobile; header nav Profile on desktop
+- Purpose: Let parents manage account details, notification preferences, privacy access, and logout from the web experience
+
+Key elements:
+- Profile summary card:
+  - Parent name
+  - Masked phone number
+  - School name
+  - Linked child or children summary
+- Settings groups:
+  - Notifications:
+    - Per-post notifications toggle
+    - Daily digest toggle
+  - Privacy:
+    - Data & Privacy row → PW-6
+    - Privacy policy row
+  - About:
+    - App/web version
+  - Account:
+    - [Log Out] button
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Loading | Page opens | Skeleton profile card + settings rows |
+| Default | Data available | Profile card + grouped settings sections |
+| Save success | Notification preference updated | Toast: "Settings updated." |
+| Save failed | API/network failure | Inline error on affected row |
+
+Interactions & Behaviors:
+- Notification preferences save optimistically
+- Data & Privacy row opens PW-6
+- Log Out returns user to PW-1 or PW-2 depending on next entry path
+
+Data Requirements:
+- Parent profile: `name`, `phone`, `school_name`
+- Linked child summary
+- Notification preference settings
+- App/web version metadata
+
+---
+
+**Screen PW-6: Parent Web Privacy Settings (DPDP Consent Management)**
+- Route: `https://cs.app/profile/privacy`
+- Entry point: PW-5 Profile / Settings → Data & Privacy; DPDP consent screen initial setup
+- Purpose: Allow parents to view, modify, and revoke DPDP consent choices at any time; India DPDP Act compliance
+
+Key elements:
+- Page title: "Your child's privacy controls"
+- School logo + child name context
+- Three consent toggle rows (matching initial consent screen):
+  1. "Share daily updates with you only" — toggle
+  2. "Recognise [child name] in class photos (AI — server-side)" — toggle
+  3. "Store data in India (deleted when you leave)" — toggle (non-revocable informational; toggle read-only with tooltip explanation)
+- Each toggle row: consent type label, description text, current status (On/Off), toggle control
+- Revoking face recognition: shows confirmation dialog before action — "Removing AI recognition means [child name] won't be automatically tagged in new photos. Teachers can still tag manually. This will delete existing recognition data within 24 hours. Are you sure?"
+- [See full privacy policy] link → modal with full policy text
+- Consent history: "Last updated: [date]" caption per toggle
+- [Save changes] button (primary, sage green) — only appears when a toggle has been changed
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Default (all consented) | First load post-consent | All toggles On, no Save button visible |
+| Toggle changed | Parent modifies a toggle | Save button appears (sage green) |
+| Revoke confirmation | Face recognition toggled Off | Confirmation dialog modal before save |
+| Saved | Save clicked | Toast: "Privacy settings updated." |
+| Revocation pending | Face recognition revoked | "Existing recognition data will be deleted within 24 hours." info banner |
 
 ---
 
