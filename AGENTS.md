@@ -1,8 +1,17 @@
-# gstack
+# gstack & Custom Agents
 
 Use the `/browse` skill from gstack for all web browsing. Never use alternate browser-control tools when the gstack browse workflow fits.
 
-Available gstack skills:
+## Custom Agent Modes
+
+These are specialized personas for focused tasks:
+- `/plan-ceo-review` — Challenge product decisions like a YC-level CEO. Ask tough questions about market fit, unit economics, and strategic alignment.
+- `/engineer` — Write production-ready code only. Full implementations, tested, with error handling, logging, and edge cases covered.
+- `/review` — Strict staff engineer code review. Nitpick architecture, performance, security, testability, and maintainability.
+- `/qa` — Malicious QA tester. Find edge cases, break the UI, test error states, and discover what could fail in production.
+- `/ship` — Release master. Write release notes, deployment checklists, runbooks, and rollback plans. Think operationally.
+
+## Available gstack skills:
 - `/office-hours` — structured office hours facilitation
 - `/plan-ceo-review` — CEO review planning
 - `/plan-eng-review` — engineering review planning

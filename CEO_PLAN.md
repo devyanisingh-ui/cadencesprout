@@ -121,16 +121,306 @@ A teacher opens CadenceSprout at 9am. She takes a 15-second video of the morning
 ## Key Architectural Decisions
 
 1. **Build from scratch** — no reuse from Cadence Infotech's existing ERP. New backend, new mobile apps, new web dashboard.
-2. **Per child per month pricing** — ₹20-30/child/month (launch rate). Year 1 billing: manual invoicing. Razorpay auto-billing in Phase 2 (post product completion). Fraud mitigation deferred to Phase 2 when auto-billing is implemented.
-3. **WhatsApp magic-link** — progressive engagement: Wapi sends WhatsApp message → link opens web view → after 3 engagements, prompt native app install. Risk: Wapi is an unofficial gateway; reliability is ~95% uptime, can be blocked. Fallback: SMS via Twilio/MSG91 if Wapi fails. Migrate to official WhatsApp Business API post-launch.
-4. **AI caption drafting + milestone suggestion** — Claude API (claude-haiku-4-5 for cost, claude-sonnet-4-6 for quality). Teacher reviews AI draft before posting — never auto-posts.
-5. **Child identification in photos/videos** — AWS Rekognition server-side for face recognition (ML Kit only does face *detection*, not *recognition* — these are different). Class roster photos uploaded at enrollment as reference embeddings. Photos sent to Rekognition only after explicit DPDP consent. Results returned as suggested child tags; teacher confirms before posting. Added cost: ~$0.001/image at launch scale. DPDP explicit consent screen required at parent onboarding and covers server-side processing.
-6. **NEP 2020 milestone taxonomy** — Use the NCERT Foundational Stage Curriculum (FSC) document (public, 2022) as the milestone taxonomy source. Pre-load ~80 developmental indicators across 5 domains (physical, cognitive, language, social-emotional, aesthetic). This taxonomy must be defined and loaded before AI tagging is implemented (Month 3). Assign ownership to product lead.
-7. **Engagement score formula** — School-level: (parents who viewed ≥1 post this week / total enrolled parents) × 100. Simple, transparent, easy to explain to school owners. Stored as a weekly snapshot, not real-time.
+
+2. **Per child per month pricing** — ₹20-30/child/month (launch rate). **CRITICAL GATE: Pricing validation with first 3 paying customers by Month 8. If willingness-to-pay is < ₹15/child/month, pivot to school-based pricing before full Razorpay build.**
+   - Year 1 billing: manual invoicing via payment link (Razorpay hosted page). No subscription auto-billing Year 1.
+   - Fraud mitigation (Year 1): enrollment verification via WhatsApp photo of enrollment slip + parent mutual confirmation. Attendance as source of truth for billing discrepancies.
+   - Razorpay auto-billing moves to Phase 2 after product is stable. Decision gate: Month 12, after 10+ schools for 3+ months. At that point, build subscription + churn prevention.
+   - REVERSIBILITY: Switching from per-child to per-school pricing is a one-way door with school ops impact — validate pricing before Month 7.
+
+3. **WhatsApp magic-link** — progressive engagement: Wapi sends WhatsApp message → link opens web view → after 3 engagements, prompt native app install.
+   - **FAILURE PATH:** Wapi unreliability (95% uptime = 36 hours/month downtime). If message doesn't send:
+     - Alert: email to admin + Slack webhook to team
+     - SMS fallback: Twilio (cost: ₹1/SMS) auto-sends if Wapi fails for >2 mins
+     - Teacher sees status: "✓ sent" vs "⚠ pending (will retry)"
+     - Retry logic: exponential backoff, 6 attempts over 24 hours, then parent prompt to message manually
+   - **Data path for Wapi flow:**
+     ```
+     Teacher clicks "send to WhatsApp"
+       → Validate parent phone (format, blocked list)
+       → Queue message via Wapi SDK
+       → Log event: timestamp, phone, message ID, teacher ID
+       → If Wapi returns timeout/error: fallback to SMS (after 2 min)
+       → If SMS also fails: mark "pending", retry batch job at 9am tomorrow
+       → Parent receives message → taps link → web view session created + tracked
+       → After 3 views: prompt install, track install source
+     ```
+   - Migrate to official WhatsApp Business API by Month 6 post-launch (Phase 2). Decision gate: if Wapi blocks ≥2 times, accelerate migration.
+   - **Owner:** Backend lead. Line item in Month 3 build.
+
+4. **AI caption drafting + milestone suggestion** — Claude API (claude-haiku-4-5 for cost, claude-sonnet-4-6 for quality). 
+   - **FAILURE PATH:** API rate limit (200 req/min at launch scale), timeout, or malformed response:
+     - If rate limited: queue draft generation, process batch at 6am next day
+     - If timeout (>10s): fallback to template caption ("Captured learning moments today!") + allow manual edit
+     - If malformed response (invalid JSON, missing fields): log error + alert Slack + show teacher "Draft unavailable, please write your own"
+   - Teacher *always* reviews and can edit AI draft before posting — never auto-posts.
+   - Cost monitoring: if cost/caption > ₹0.02, alert to product lead (unusual volume or prompt inefficiency).
+   - **Owner:** Backend lead. Month 5 build.
+
+5. **Child identification in photos/videos** — AWS Rekognition server-side for face recognition (ML Kit only does face *detection*, not *recognition* — these are different).
+   - **CRITICAL ASSUMPTION:** Accuracy must be ≥90% (measured: silhouette child matches suggestion 9/10 times). Pilot school validation: Week 4-8. If ≤85%, project pivots to teacher-manual child tags.
+   - **Data flow:**
+     ```
+     Teacher uploads photo
+       → Validate: file size (max 10MB), format (JPG/PNG)
+       → Compress: 1280x720 max, optimize for Rekognition
+       → User consent check: photo uploading requires explicit opt-in badge
+       → Send to Rekognition + class roster embeddings
+       → Returns: array of [face ID, confidence score, suggested child name]
+       → Filter: show only >80% confidence
+       → Teacher sees: "Rohan (92%), Priya (87%), Unknown (43%)"
+       → Teacher confirms/corrects tags before publishing
+       → Log: upload ID, suggested child, teacher's choice, timestamp
+       → DPDP compliance: photo deleted after 7 days if post not published
+     ```
+   - **Cost:** ~$0.001-0.002/image at launch. Monitor weekly spend; alert if >₹100/week (unexpected spike).
+   - **Privacy handling:**
+     - Class roster reference photos encrypted at rest, deleted after 12 months
+     - Photo batch processing: batch delete job runs daily, removes unpublished uploads >7 days old
+     - Parent consent: explicit DPDP checkbox at parent onboarding + reminder in feed ("We use AI to suggest child names; Google your privacy")
+     - Audit log: all Rekognition calls logged with parent ID, child ID, confidence, action taken
+   - **DPDP compliance:** See Risk #5 — legal owner assigned Month 1.
+   - **Owner:** ML or backend lead. Month 5 build. Requires pre-loaded class roster with enrollment photos (Month 2).
+
+6. **NEP 2020 milestone taxonomy** — Use the NCERT Foundational Stage Curriculum (FSC) document (public, 2022) as the milestone taxonomy source.
+   - Pre-load ~80 developmental indicators across 5 domains: physical, cognitive, language, social-emotional, aesthetic
+   - **Definition:** Each milestone must include: name, age range (27-36 months, etc.), observable behavior description (e.g., "Identifies colors by name"), associated activity types (singing, block play, etc.)
+   - **Data model:** See Technical Design — Milestone Schema
+   - **Loading:** CSV import with validation; if >5 validation errors, reject entire batch + email product lead
+   - **Before:** This taxonomy MUST be loaded and validated before AI tagging begins (before Month 5). Month 2: assign to product lead. Month 3-4: define + load.
+   - **Owner:** Product lead. Dependency for Month 5 AI build.
+
+7. **Engagement score formula** — School-level: (parents who viewed ≥1 post in last 7 days / total enrolled parents) × 100.
+   - Simple, transparent, easy to explain to school owners.
+   - **Dashboard stats:**
+     - Weekly score (0–100)
+     - Trend: 4-week average + sparkline
+     - Breakdown: "32/50 parents active" (counts)
+     - Comparison: "↑ 14% from last week"
+   - **Failure case:** If engagement < 30% after Month 1, run diagnostics:
+     - Which parents never tapped a post? (segmentation)
+     - Did Wapi fail for subset? (check error logs)
+     - Are teachers posting enough? (post volume by teacher)
+   - **Phase 2:** Per-teacher, per-class breakdown (Month 12+). Deferred to avoid dashboard complexity in Month 6-7 crunch.
+   - **Owner:** Frontend lead. Month 6 build.
 
 ---
 
-## Go-to-Market (first 10 paying customers)
+## Failure Modes Registry
+
+Every codepath that can fail, with explicit rescue action and user impact:
+
+| Codepath | Failure Mode | Rescued? | Rescue Action | User Sees | Logged? |
+|----------|--------------|----------|---------------|-----------|---------|
+| **Wapi message send** | Network timeout | **Y** | Retry exponential backoff (2,4,8min), then SMS | "Sending..." then fallback SMS | ✓ event log |
+| | Rate limited (>200/min) | **Y** | Queue for batch 6am | "Message queued, will send overnight" | ✓ alert + log |
+| | Invalid phone number | **N** → **FIX** | Validate on teacher input, reject loudly | "Invalid phone number" error | ✓ input validation |
+| | Wapi service down | **Y** | SMS fallback immediately | "Sending via SMS" | ✓ error log |
+| **Rekognition image** | File too large (>10MB) | **Y** | Reject at upload | "File must be <10MB" | ✓ validation |
+| | Face detection fails (no faces) | **Y** | Show teacher "No faces detected, tag manually" | Empty suggestion list | ✓ call log |
+| | Low confidence on all faces (<80%) | **Y** | Show "Only low-confidence suggestions, please confirm" | Gray suggestions, require teacher override | ✓ call log |
+| | Rate limited | **Y** | Queue for batch processing at 10am | "Processing image, will tag by 10am" | ✓ alert + log |
+| | Image corruption/bad format | **Y** | Validate before upload, reject | "Invalid image format" | ✓ validation |
+| **Claude API caption** | Rate limited (>200 req/min) | **Y** | Queue for batch 6am | "Draft will be ready by 6am" | ✓ alert + log |
+| | Timeout (>10s) | **Y** | Fallback template caption | "Template caption shown; edit manually" | ✓ error log |
+| | Malformed JSON response | **N** → **FIX** | Parse validation + fallback template | "Draft unavailable, write manually" | ✓ error log |
+| | Empty/nonsense caption | **N** → **FIX** | Check response length & quality score, fallback if low | "Template caption" | ✓ quality log |
+| **Parent feed load** | No posts (empty feed) | **Y** | Show "No posts yet, check back soon" | Empty state with CTA | ✓ analytics |
+| | Database connection failure | **N** → **FIX** | Retry 3x, then show "Service unavailable, try again in 5min" | Error message | ✓ alert + log |
+| | Posts take >3s to load | **Y** | Show skeleton loading, progressive load | Loading animation | ✓ perf metrics |
+| **Child enrollment** | Duplicate email | **Y** | Auto-merge profiles or show error | "Account already exists, sign in" | ✓ audit log |
+| | Photos upload fails | **Y** | Retry on next login; show "Photo will sync soon" | Temporary state, retry later | ✓ error log |
+| | Missing required fields | **Y** | Validate form, block submit, highlight gaps | Field-level errors | ✓ validation log |
+| **Manual invoicing** | School marks payment received but didn't | **Y** | Admin audit flow: verify Razorpay receipt, revert if mismatch | Admin prompt: "Verify receipt" | ✓ audit log |
+| | School enrolled 50 but paid for 40 | **N** → **FIX** | Attendance-based billing check: alert if enrolled > billed | Admin alert: "Enrollment mismatch detected" | ✓ alert + audit |
+| | School deletes child mid-month | **N** → **FIX** | Prorated refund logic undefined | Undefined behavior → **SCOPE GATE** | → TBD |
+| | School forgets to pay | **Y** | Auto-send reminder Day 25 of month | "Invoice due in 5 days" SMS | ✓ alert log |
+
+**CRITICAL GAPS (must resolve before Month 8):**
+- Malformed Claude response recovery
+- Enrollment/billing discrepancy detection
+- Database connection failure handling + alerting
+- Child profile deletion refund logic
+- Rekognition low-confidence edge case clarity
+
+---
+
+## Observability & Metrics Dashboard (Month 1-2 definition; Month 8 implementation)
+
+**Level 1 — Real-time alerts (on-call team, Slack webhook):**
+- Wapi success rate drops <95% → alert ops team
+- Claude API error rate >5% → alert backend owner
+- Database query p99 latency >1s → alert backend owner
+- Any unhandled exception → alert with stack trace + context
+- DPDP audit log anomalies (e.g., 1000 Rekognition calls for 1 photo) → alert security owner
+
+**Level 2 — School/teacher dashboard (in-app, daily digest):**
+- Parent engagement % (today, last 7 days, trend)
+- Posts published (today, last 7 days, by teacher)
+- Milestone tags used (count, distribution across domains)
+- Parent app installs (% of engaged parents who installed)
+- AI caption usage (% of posts with AI draft, acceptance rate)
+
+**Level 3 — Admin dashboard (ops, daily):**
+- Active schools (sign-up, first post, still active)
+- Teacher retention (% active 7+ days ago)
+- Revenue (schools paying, amount, MRR forecast)
+- Support tickets (volume, resolution time)
+- System health (API errors, uptime, backfill jobs)
+
+**Specific KPI baselines for success criteria (Month 10):**
+- Teacher posts per class per day: **≥3** (tracked by: count by teacher_id + class_id, daily)
+- Parent engagement rate: **≥70%** (tracked by: parents who viewed ≥1 post / total enrolled, weekly snapshot)
+- AI caption acceptance: **≥70%** (tracked by: accepted/total captions sent to teacher, daily)
+- Rekognition accuracy: **≥90%** (tracked by: teacher_override_count vs AI suggestion, silhouette match rate, monthly audit)
+- Parent app install rate (of those engaged via WhatsApp): **≥60% by Month 12** (tracked by attribution source)
+- NPS (teacher): **≥30** (survey at Month 10, minimum 20 respondents)
+- Uptime: **≥99%** (monthly, excludes planned maintenance)
+
+---
+
+## Temporal Interrogation — Implementation Gates & Decisions Required NOW
+
+```
+HOUR 1-4 (Month 1-2: Foundations)
+  → What must be true for Phase 1 to ship on time?
+     — DPDP legal sign-off (assign owner today; dependency for all AI features)
+     — Pricing validated at ₹20-30/child/month (pilot school signals willingness by Month 2)
+     — Wapi reliability tested (SMS fallback working)
+     — Tech stack decided (React Native vs Flutter, backend stack, database)
+     — Team hired (ML engineer confirmed by Month 1, frontend by Month 1.5)
+
+HOUR 5-6 (Month 3-4: Proof of Concept)
+  → What needs to be tested before committing to full build?
+     — AI pair programming pilot: React web feed live to pilot school by Week 4
+     — WhatsApp switching rate: >30% of parents tapped magic link in Week 4-8
+     — Teacher adoption: pilot teachers post ≥2x/day by Week 6
+     — AI tagging accuracy: Rekognition accuracy ≥90% on pilot photos by Week 8
+     — **SCOPE GATE (Month 5):** If ANY of above fails, pivot:
+        — Switching rate <30%? → Investigate: is it WhatsApp friction or product friction?
+           (if product, cut engagement score, focus on core feed)
+        — Tagging accuracy <85%? → Pivot to manual child tags + defer AI to Phase 2
+        — Teacher adoption <2x/day? → Investigate school fit; may be wrong segment
+
+HOUR 7-8 (Month 6-8: Integration & Scale)
+  → What decisions can only be made after seeing real data?
+     — Pricing validation: First 3 paying schools provide data on willingness. If <₹15/child/month,
+        pivot to per-school pricing before Razorpay build.
+     — Parent engagement gap: If parent engagement <40% at Month 7, debug:
+        — Is Wapi failing? (check logs)
+        — Are teachers not posting? (post volume by teacher)
+        — Is app slow? (perf metrics)
+        → Remediate and loop, don't just launch with low engagement
+     — Milestone taxonomy usability: Are teachers using milestone tags or ignoring?
+        (track acceptance rate by milestone domain)
+        → If <50% adoption, simplify taxonomy for Phase 2
+     — DPDP compliance: Any legal challenges during pilot?
+        → If yes, must resolve before scaling
+
+HOUR 9-10 (Month 9: Polish & Validation)
+  → What final validation must happen before Month 10 launch?
+     — Pilot school retention: Is pilot school willing to pay? If not, why?
+     — Engagement trend: Is parent engagement stable, growing, or declining?
+     — Error rates: Are critical failures logged and recoverable?
+     — Rollback plan: Can we revert Rekognition if quality issue found post-launch?
+        → Test rollback by disabling AI tagging for 1 day mid-Month 9
+
+HOUR 11+ (Month 10+: Go/No-Go)
+  → Final gate: Ship or pause?
+     ✓ SHIP IF: 1 school live 3+ weeks, parents engaged ≥70%, NPS ≥30, DPDP signed
+     ✗ PAUSE IF: Parent engagement <40% or critical unresolved error
+        → Next gate: Month 11.5 (resolve issues, re-evaluate)
+```
+
+---
+
+## Deployment Risk Map
+
+| Deploy Window | Components | Old Code + New Code Impact | Rollback Time | Risk Level |
+|---------------|-----------|---------------------------|---------------|-----------|
+| **Month 3-4: Parent feed v1** | Frontend + API | Old feed might not load if schema changed | 5 min (git revert) | Low |
+| **Month 5: AI tagging deployment** | Backend (Claude API + Rekognition) | Old code: no AI suggestions. New code: AI enabled. Shadow codepath = no risk | 5 min (feature flag disable) | Low |
+| **Month 7: ERP (admissions + fees)** | Backend database schema + API | Need DB migration (backward compat deploy order): (1) deploy new code, (2) run migration, (3) monitor. Old code still works with old schema. | 15 min (revert code), migration rollback +30 min | **Medium—requires care** |
+| **Month 8: Self-serve onboarding** | Frontend + backend auth changes | New auth system live; old login still works (backward compat) | 10 min (feature flag) | Low |
+| **Month 10: Full launch (5 schools)** | All components live | First production data at scale; manual billing system live | 30 min (if critical) | **High—monitor closely** |
+
+**Deployment principles:**
+- Feature flags for every new feature (disable instantly if quality issue)
+- Database migrations always backward-compatible (old code still works with new schema)
+- Canary deploy first school (1 of 5), monitor 24 hours before rolling to remaining 4
+- Manual billing: human approval for every transaction in Year 1 (no auto-charge)
+- Rollback test: every deploy includes rollback dry-run
+
+---
+
+## Reversibility Assessment
+
+| Decision | One-Way / Reversible | Implications | Owner |
+|----------|---------------------|-------------|-------|
+| **Per-child pricing model** | **One-way** | Switching to per-school pricing mid-year requires crediting existing schools. Validate by Month 8. | Product + Finance |
+| **Rekognition for child ID** | Reversible (Month 3-4) | If accuracy <85%, switch to manual tags. Cost is sunk. | ML lead |
+| **Wapi for WhatsApp** | Reversible (Month 4) | If Wapi blocks, switch to SMS or official WhatsApp API. SMS fallback ready by Month 3. | Backend lead |
+| **Claude API for captions** | Reversible | If cost too high or quality low, switch to templates or in-house NLP. Monitor cost weekly. | Backend lead |
+| **React Native + Next.js** | **Partially reversible** | Rewriting to Flutter would require 2+ months. Validate tech stack by Month 2 PoC. | Tech lead |
+| **10-month timeline** | **One-way** | Slipping past Month 10 loses investor momentum. Scope cuts must happen by Month 5. | CEO |
+| **Manual invoicing Year 1** | Reversible (Month 12) | Switching to Razorpay auto-billing in Phase 2. Setup by Month 12. | Finance + Backend |
+| **DPDP compliance** | **One-way if violated** | If launch without consent flows, legal liability. Must have sign-off by Month 2. | Legal lead |
+
+---
+
+## Critical Path Dependencies (must not slip)
+
+1. **DPDP legal review sign-off** — Month 1-2 (gates all AI features)
+2. **Tech stack + team hire** — Month 1.5 (gates all engineering)
+3. **AI pair programming pilot** — Week 4 (gates assumption on parent adoption)
+4. **Rekognition accuracy validation** — Month 4-5 (gates AI tagging commit)
+5. **Pricing validation (first 3 schools)** — Month 8 (gates Year 2 billing model)
+6. **Parent engagement ≥70%** — Month 9 (gates launch success criteria)
+
+---
+
+## Decision Gates — Go/No-Go Checkpoints
+
+| Gate | Date | Success Criteria | Failure Path | Owner |
+|------|------|-----------------|--------------|-------|
+| **Tech + team + DPDP** | Month 2 | Stack chosen, team 80% hired, legal review started | Slip timeline or seek extension | CEO |
+| **Prototype pilot feedback** | Month 5 (Week 4+8) | Parent adoption ≥30%, teacher posts ≥2x/day, AI accuracy ≥90% | Pivot feature set or extend pilot 4 weeks | Product |
+| **Pilot school willing to pay** | Month 7 | School chooses to convert to paid after trial | Investigate segment fit: wrong school type? | Sales |
+| **Pricing locked** | Month 8 | ≥3 schools committed to ₹20-30/child/month | Adjust pricing down or pivot model | Product + Finance |
+| **Parent engagement ≥70%** | Month 9 | Stable engagement for 2+ weeks, engagement score stable | Debug root cause (Wapi? teacher activity?), remediate | Product + Ops |
+| **Launch ready** | Month 10 | All critical gaps resolved, rollback tested, monitoring live | Ship with known issues (acceptable risk) or hold | CEO |
+
+---
+
+## Risks Reassessed (with ownership + mitigation detail)
+
+| # | Risk | L/M/H | Impact | Mitigation | Owner | Deadline |
+|---|------|-------|--------|-----------|-------|----------|
+| 1 | **WhatsApp habit not broken** (parents won't adopt) | **H** | Critical | Pilot: measure %parents who switch from WhatsApp link to app. Gate at 30%+ by Week 8. If <30%, extend pilot or investigate. | Product | Month 4 |
+| 2 | **AI child ID high error** (wrong tags) | **M** | High | Pilot accuracy validation: ≥90% required. Benchmark: 200+ photos, teacher override rate. If <85%, defer to Phase 2. | ML/Backend | Month 5 |
+| 3 | **Build slips past Month 10** | **M** | High | Scope gates: Month 5 (cut if behind), Month 8 (cut non-moat features). Non-negotiable: ERP + billing + AI tagging. | CEO | Month 10 |
+| 4 | **Illumine ships first** | **M** | Medium | Out of control; focus on execution speed + teacher love (moat is product quality, not speed). | Product | Ongoing |
+| 5 | **DPDP enforcement blocks launch** | **L** | Critical | Legal sign-off by Month 2. Explicit consent flows from Day 1. Audit trail on all photo processing. | Legal | Month 2 |
+| 6 | **Wapi blocked by WhatsApp** | **M** | Medium | SMS fallback ready by Month 3. Official WhatsApp API migration by Month 6 post-launch. Test failover monthly. | Backend | Month 3 |
+| 7 | **Billing fraud** (under-reported children) | **M** | Medium | Attendance-based billing verification: alert if enrolled > billed. Manual review for discrepancies >10%. Audit trail for all changes. | Finance | Month 7 |
+| 8 | **Claude API becomes unaffordable** | **L** | Medium | Monitor cost/caption weekly. Fallback: template captions + in-house NLP exploration Phase 2. Max budget: ₹500/month for captions. | Backend | Month 5+ |
+| 9 | **Poor teacher retention** (stop posting) | **M** | High | Monitor: posts/teacher/day. If downward trend, investigate (bugs, complexity, wrong segment). Monthly cohort analysis. | Product | Month 6+ |
+| 10 | **Parent app installs plateau** | **M** | Medium | Measured: attribution (WhatsApp link → app install rate). If <60% after 2 months on app store, UX issue or wrong approach. | Product | Month 12 |
+
+---
+
+## Success Metrics Reframed (not just NPS ≥ 30)
+
+**Is this product actually winning?**
+- **Teacher love:** Posts/teacher/day ≥3, actively suggest ideas to peers (qualitative interviews at Month 6)
+- **Parent engagement:** ≥70% active weekly, repeat opens (not just first post), share/forward rates >10%
+- **Retention:** 1 school stays live 6+ months, expand to 2+ children per school (not just top kids)
+- **Product-market fit signal:** Organic referrals (school tells peers) >20% of new school source by Month 12
+- **Data quality:** Milestone tags used on ≥70% of posts, accurate enough for parent portfolios
+
+**Why these matter:** NPS is lagging. These leading indicators tell us if we're on track by Month 6.
+
+---
 
 1. **Month 1-3 (free pilot):** Pilot school from existing Cadence Infotech contact. Free for 3 months. Iterate on teacher/parent UX weekly.
 2. **Month 4-6 (reference + referrals):** Use pilot school as case study. Direct founder outreach to 20 standalone preschool chains in Mumbai/Pune (Cadence's existing network). Offer 3-month trial, then paid.
