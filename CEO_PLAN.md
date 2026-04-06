@@ -422,12 +422,7 @@ HOUR 11+ (Month 10+: Go/No-Go)
 
 ---
 
-1. **Month 1-3 (free pilot):** Pilot school from existing Cadence Infotech contact. Free for 3 months. Iterate on teacher/parent UX weekly.
-2. **Month 4-6 (reference + referrals):** Use pilot school as case study. Direct founder outreach to 20 standalone preschool chains in Mumbai/Pune (Cadence's existing network). Offer 3-month trial, then paid.
-3. **Month 7-10 (self-serve):** Self-serve onboarding live at cadencesprout.com. Target: NISA preschool association members, Facebook preschool owner groups, LinkedIn outreach.
-4. **Month 10+ (scale):** If NPS ≥ 30 and 10+ paying chains: hire first salesperson; begin franchise chain outreach.
-
----
+## GSTACK REVIEW REPORT
 
 ## Risk Register
 
@@ -443,40 +438,164 @@ HOUR 11+ (Month 10+: Go/No-Go)
 
 ---
 
-## 10-Month Build Timeline
+## 10-Month Build Timeline (Revised with Gates & Scope Cuts)
 
 ```
-Month 1-2:  Backend foundation (multi-tenant auth, school + teacher onboarding)
-            + NEP 2020 milestone taxonomy loaded
-            + DPDP legal review initiated (assign to legal counsel, deadline: Month 2)
-            + NOTE: No Razorpay in Phase 1 — Year 1 billing is manual invoicing.
-              Razorpay auto-billing moves to Phase 2 (post product completion).
-            [PARALLEL — OWNER: Founder/PM: AI pair programming pilot (Claude Code)
-             — React web feed prototype to pilot school by Week 3-4.
-             Measure: parent WhatsApp → app switching rate.
-             Gate: if < 30% adoption in 2 weeks, investigate assumption before expanding scope]
-
-Month 5-6 SCOPE GATE: If behind schedule at Month 5 review:
-            → CUT: AI year-end portfolio (defer to Phase 2 — lowest urgency pre-first-billing)
-            → KEEP: AI tagging, milestone tracker, parent app, engagement score (core moat)
+Month 1-2:  Backend foundation (multi-tenant auth, school + teacher onboarding + DPDP audit log)
+            + NEP 2020 milestone taxonomy loaded + validated
+            + DPDP legal review signed off (dependency for all AI; legal owner assigned TODAY)
+            + Tech stack finalized + team 80% hired (ML, frontend, backend confirmed)
+            + NOTE: No Razorpay in Phase 1 — Year 1 billing is manual (Razorpay auto in Phase 2)
+            
+            [PARALLEL TRACK — OWNER: Founder/PM + 1 Engineer]
+            AI PAIR PROGRAMMING PILOT — React web parent feed (Week 1-4)
+              • Week 1: Claude Code pair programming (40h human, 160h CC)
+              • Week 2: Integrate pilot school, iterate on UX (feedback loop)
+              • Week 3-4: Live with pilot school. Measure:
+                — Parent adoption: %parents tapped magic link (target: ≥30%)
+                — Repeat engagement: day 2/3/7 return rates (target: ≥40%)
+                — App installs: of engaged, %installed native (target: ≥20%)
+              • **GATE**: If adoption <15%, kill project. 15-30%, investigate. ≥30%, proceed.
+            Month 2 END: CEOdecision on proceed vs pivot
 
 Month 3-4:  Parent feed (posts, photos, video) + teacher React Native app
-            + WhatsApp magic-link (Wapi integration + web view)
-            + Pilot school live on no-code version; observe WhatsApp switching behavior
+            + WhatsApp magic-link (Wapi SDK + web view) + SMS fallback tested
+            + Pilot school live on new platform (not no-code)
+            + WhatsApp adoption tracking + weekly iteration
+            + New metrics: posts/teacher/day, parent repeat engagement %
 
-Month 5-6:  AI tagging (on-device ML Kit + Claude API caption drafting)
-            + Milestone tracker (NEP 2020 taxonomy)
-            + Parent React Native app
+Month 5 SCOPE GATE (re-evaluate at Month 5 kickoff):
+            **If ahead of schedule (rare):** Add per-class engagement score breakdown earlier.
+            **If on-schedule:** Proceed as planned.
+            **If behind (likely):**
+              → CUT: AI year-end portfolio (defer to Phase 2)
+              → CUT: Per-class engagement detail (ship school-level only)
+              → CUT: Milestone taxonomy v1 (reduce from 80 to 40 core)
+              → KEEP: AI tagging, feed, ERP, billing, WhatsApp (non-negotiable)
+
+Month 5-6:  AI tagging (AWS Rekognition + Claude API caption) + accuracy validation
+            + Milestone tracker (NEP 2020 taxonomy, 40-80 items depending on gate)
+            + Parent React Native app (full feature parity with web)
             + School-level engagement score dashboard
+            + Launch ≥2 trial schools (free for 3 months)
 
 Month 7-8:  Core ERP (admissions, fees, attendance, staff management)
-            + Self-serve onboarding flow at cadencesprout.com
+            + Self-serve school onboarding at cadencesprout.com
+            + **Pricing  validation gate:** First 3 paying schools. If <₹15/child/month, pivot model.
+            + Manual invoice + payment link workflow (Razorpay hosted page)
+            + Direct founder sales: 20 schools outreach (leverage pilot case study)
 
-Month 9:    AI portfolio generation (auto PDF from posts + milestones)
-            + Pricing validation with first 3 paying customers
-            + Full QA + DPDP compliance audit
+Month 9:    AI portfolio generation (auto PDF from posts + milestones) — **if ahead**
+            or polish features + QA — **if on-time**
+            + Pricing locked (data from 3 paying schools)
+            + Full DPDP compliance audit + legal sign-off again
+            + Rollback procedure tested (disable AI tagging, revert schema, reverse payments)
+            + Runbooks written for ops
 
-Month 10:   Pilot school migrated from no-code to full platform
-            + Soft launch to 5 additional schools
-            + NPS measurement
+Month 10:   Pilot school converted to paid
+            + Soft launch to 5 additional schools (mix of trial + direct sales)
+            + Monitor: parent engagement, teacher retention, system stability
+            + NPS measurement (minimum 20 teachers)
+            + Go/No-Go decision: Ship to broader market or hold for Month 11 fixes
 ```
+
+---
+
+## Go-to-Market (Revised with Gated Milestones & Contingencies)
+
+**Phase 1.0 (Month 1-4): Pilot + Assumptions Validation**
+
+1. **Month 1-3 (free pilot):** Pilot school from Cadence Infotech contact. 3-month free trial.
+   - **Week 1-4:** Iterate on UX based on teacher/parent feedback (daily standups)
+   - **Measurement (weekly):** Posts/teacher/day, parent adoption %, repeat engagement
+   - **Contingency:** If posts/teacher/day <1x/day for 2+ weeks, investigate: onboarding friction? app bugs? wrong school type?
+
+2. **Contingency — Pilot DPDP Challenge (Month 1-2):** If legal raises concerns on photo consent:
+   - Immediate action: Add explicit consent flows + revise parent onboarding
+   - If issue unresolvable: Pivot to text-only feed OR pause pilot until legal cleared
+   - Owner: Legal + Product (no slippage; legal owns escalation)
+
+**Phase 1.1 (Month 4-8): Reference Sales + Validation**
+
+3. **Month 4-6 (reference + direct sales):** Use pilot school as case study.
+   - Direct founder outreach to 20 standalone chains (Cadence network) + NISA members
+   - Offer: 3-month free trial (not Month 1-3, but rolling)
+   - **Pricing validation:** By Month 7-8, track willingness of first 3 schools to pay
+   - **Contingency:** If schools won't pay ≥₹15/child/month:
+     - Pivot to per-school pricing (₹500-1000/school/month) and re-sell
+     - Re-validate with next 3 schools before Razorpay build
+
+4. **Contingency — Wapi Blocked (Month 4 onwards):** If Wapi delivery rate < 90%:
+   - SMS fallback auto-kicks in (already live)
+   - Escalate to official WhatsApp Business API (Month 6 target, accelerate if needed)
+   - Re-measure parent engagement post-migration
+
+**Phase 1.2 (Month 7-10): Scale Ready**
+
+5. **Month 7-10 (self-serve):** Self-serve onboarding live at cadencesprout.com.
+   - Profile-based marketing: NISA presch, Facebook groups, LinkedIn founder outreach
+   - Landing page: 3-min demo video (pilot school footage) + screenshot carousel + sign-up CTA
+   - **Retention tracking:** % of schools active 4+ weeks after sign-up
+
+6. **Month 10+ launch contingency:** If parent engagement <40% in paid schools:
+   - Do NOT launch to broader market yet
+   - Root cause analysis: Wapi failures? Teacher inactivity? UX friction?
+   - Fix + re-test with 1-2 schools, then re-gate
+
+---
+
+## AI Pair Programming Pilot — Critical Path (Month 1-4, PARALLEL)
+
+**Why this matters:** The entire business depends on parents switching from WhatsApp to a feed app. We need proof by Week 4, not Month 10.
+
+**What:** Working React web parent feed, deployed to pilot school Week 3-4. Real code (not Figma), powered by Claude Code pair programming.
+
+**MVP Scope:**
+- Teacher login + photo upload
+- Type caption (no AI yet; template if drafting fails)
+- Share magic link to parent (Wapi)
+- Parent opens link → web view
+- Parent sees feed + can like/comment
+- Parent can install native app (prompt after 3 engagements)
+
+**Timeline:**
+- **Week 1 (Mon-Fri):** Pair programming with Claude Code. Build React component + backend endpoints. Real tests, real deploy. Estimate: 40h human, 160h CC. **Owner: Founder + your strongest engineer—this is critical.**
+- **Week 2 (Mon-Fri):** Connect to pilot school + iterate (feedback loop). Handoff to 1 helper engineer if needed.
+- **Week 3-4:** Go live. Measure:
+  - **Parent adoption:** How many parents tapped magic link in Week 1-4? (target: ≥30%)
+  - **Repeat engagement:** How many came back Day 2, 3, 7? (target: ≥40% return)
+  - **Install momentum:** Of engaged parents, % who installed native app? (target: ≥20%)
+  - **Teacher posts:** Are teachers using it? Posts/day/class? (target: ≥2)
+
+**Success Criteria (Gates):**
+- ✓ **Adoption ≥30%:** Proceed to full Phase 1 build. WhatsApp switching is solvable.
+- ⚠ **Adoption 15-30%:** Investigate before proceeding. Try SMS magic link or UX tweak. Re-test.
+- ✗ **Adoption <15%:** Kill project. WhatsApp switching is not solvable with our approach.
+
+**Why this gate is non-negotiable:** If you can't get parents to engage with a demonstrably working product after 4 weeks, the business model is wrong. Better to find out in Week 4 than Month 10 after 8 months of build.
+
+**Failure path:** This is a one-way door. Do not skip or defer this pilot.
+
+---
+
+## Technical Debt & Scope Cut Plan (triggered at Month 5 review)
+
+**If behind schedule:**
+
+| Feature | Priority | Effort | Cut by | Impact | Contingency |
+|---------|----------|--------|--------|--------|-------------|
+| **AI year-end portfolio** | P2 | M | 2-3w | Defer to Phase 2. Parents keep posts in feed. | Not critical for PMF. |
+| **Per-class engagement** | P2 | M | 2-3w | Defer to Phase 2. Ship school-level only. | School adoption risk: low. |
+| **Milestone v1 (80 items)** | P1 | M | Cut to 40 | Reduce to 5 domains, 8 per domain. Still validates concept. | Taxonomy simplified for launch, expanded Phase 2. |
+| **Regional languages** | P3 | L | Already deferred | English-first. Hindi/Tamil Phase 2 (Month 12). | No revenue impact M1-M10. |
+| **HRMS, bus tracking, etc.** | P3 | L | Already deferred | Phase 2. Not in Phase 1 scope. | No impact. |
+
+**Non-negotiables (do NOT cut):**
+- Teacher app + parent feed (core product)
+- AI tagging + milestone tracker (moat vs. Illumine)
+- Attendance + ERP + manual billing (revenue engine, non-negotiable for Month 10)
+- WhatsApp + engagement score (GTM + school retention)
+
+**If you cut a non-negotiable feature, you've killed Phase 1. Better to slip 2 months than cut moat.**
+
+---

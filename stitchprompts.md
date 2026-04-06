@@ -398,6 +398,71 @@ Design the Class Roster screen for CadenceSprout's teacher app. Sunita views all
 Each row (72dp tall, white card, 8dp radius, 12dp padding):
 - Left: circular child photo avatar (48dp, warm placeholder with initial, different pastel background per child — rotate through: `#E8F4EC` sage-tint, `#FEF3E7` terracotta-tint, `#F0EBE3` cream-tint)
 - Center block: child name Inter Semibold 15sp `#1A1A1A`; below — "4 yrs · Adm #2341" Inter Regular 12sp `#9A9A9A`; below — parent name "Parent: Meera" Inter Regular 12sp `#6B6B6B`
+
+---
+
+## Screen P-2: DPDP Consent Screen (Stitch Prompt)
+
+Design brief (self-contained Stitch prompt):
+
+Design a mobile DPDP Consent Screen for CadenceSprout (Parent app, first-run modal). This screen collects per-type data consent for a child before showing the feed. Produce: a PNG wireframe (mobile), a self-contained single-file HTML sketch (no external deps), and a content/copy JSON for engineers.
+
+Constraints and platform:
+- iPhone 14 Pro viewport (393×852pt), portrait. React Native implementation.
+- Brand: warm editorial (see Design System Reference). Use Fraunces for headings and Inter for UI copy.
+- Accessibility: all tappable controls >=44×44pt, color contrast >=4.5:1 for text, provide accessible labels for screen readers.
+
+Goal & user:
+- Goal: get clear, informed, per-type consent from the parent for storing and processing their child's data (including AI face recognition) so the app can show personalized posts.
+- User: Meera, a working parent who may be privacy-cautious and wants a short, trustworthy explanation.
+
+Deliverables (produce all):
+1. PNG wireframe: single screen + two variants (consent all pre-checked, one consent unchecked). Export to `/tmp/p2-consent-wf.png`.
+2. Single-file HTML sketch placed at `/tmp/p2-consent-sketch.html` demonstrating layout, fonts (system fallback), and accessible form controls. Include inline comments explaining ARIA labels and focus order.
+3. JSON copy bundle (compact) containing: `title`, `description`, `consent_items` (array of {id, short_label, long_description, default_checked, revoke_note}), `primary_cta`, `secondary_action`, `legal_link_text`.
+4. Small style guide excerpt (colors, sizes for this screen) as YAML block at end of HTML.
+
+Screen structure (strict):
+- Modal header: school logo left, center title: "Your child's privacy" (Fraunces 18sp), close `X` top-right (accessible label "Close consent modal").
+- Intro copy: one-line supportive sentence: "Your child's privacy is our first commitment." (Inter 14sp, `#1A1A1A`) then 2–3 sentence explanation (Inter 13sp `#6B6B6B`), max 3 lines.
+- Consent items list (vertical stack, 16dp gaps): each item is a full-width row with:
+  - Checkbox (48dp tappable area) left
+  - Short label (Inter Semibold 14sp)
+  - Long description (Inter Regular 13sp, muted color) under the label
+  - Small `i` info icon that expands inline to show one-line examples when tapped (animated expand/collapse)
+- Consent items to include (exact copy keys, include these descriptions in JSON):
+  1. `share_updates`: "Share daily updates with you only" — explains parents will receive photos/videos in this private feed.
+  2. `face_recognition`: "Recognise [child name] in class photos (AI — server-side)" — explains face recognition is used to suggest tags; includes opt-out effect: "If you opt out, your child will not be auto-tagged; teachers can tag manually." Provide `revoke_note` explaining deletion timeline (24 hours).
+  3. `store_in_india`: "Store data in India (deleted when you leave)" — clarifies data residency and deletion policy.
+- Consent UX rules:
+  - All items default to checked but editable.
+  - Each checkbox toggles immediately and is persisted optimistically; show inline saving spinner if network latency > 500ms.
+  - If `face_recognition` is unchecked AND it was previously enabled, show a subtle confirm banner: "Turning this off will remove existing face data within 24 hours. Continue?" with Confirm / Cancel.
+  - Provide an inline link to full privacy policy modal: "See full privacy policy" (opens accessible modal overlay).
+- CTA row pinned to bottom above safe-area: Primary CTA (full-width) `I agree` (sage green, `#5C8B6E`). Secondary text button under it: `Ask my school later` (neutral link style). Also include a tertiary tiny link: "Manage data later in Profile > Data & Privacy".
+
+States and variants to produce:
+- Default (all pre-checked) — show enabled primary CTA.
+- One unchecked (face_recognition unchecked) — show confirm banner variant when toggled off.
+- Offline state — toggles disable (opacity 0.5), primary CTA shows offline tooltip: "You're offline — consent will be saved when you're online." Include retry affordance.
+- Error state — if save fails, show inline error under the affected consent item and toast: "We couldn't save your choice. Try again."
+
+Accessibility & copy guidance:
+- Provide clear accessible labels (e.g., checkbox `aria-labelledby` references the short label). Provide `aria-describedby` for long descriptions.
+- Ensure focus order: close `X` → first checkbox → subsequent checkboxes → primary CTA → secondary link.
+- Provide a short, friendly confirmation toast after `I agree`: "Thanks! You're all set — returning to the feed." and move focus to the feed content.
+
+Acceptance criteria for Stitch output:
+- PNG wireframe and HTML sketch render similar layouts (visual parity). HTML includes comments with ARIA and focus order. JSON copy contains the specified fields.
+- All tappable controls annotated with min touch size and accessible labels.
+- Provide a one-paragraph rationale at top of the HTML explaining the UX choices (2–3 sentences).
+
+Developer notes (include in HTML comments):
+- Persist consent via `POST /api/v1/parents/{parent_id}/consent` with payload `{items: {share_updates: true, face_recognition: false, store_in_india: true}}` — show optimistic UI and rollback on error.
+- If toggling `face_recognition` from true→false, queue deletion job `DeleteChildFaceDataJob` and display the 24-hour deletion message.
+
+End of prompt. Use explicit copy from the JSON bundle when generating UI text. Keep everything concise and parent-friendly.
+
 - Right: parent status badge (pill, 24dp tall, 8dp horizontal padding, Inter Regular 11sp):
   - Active: `#E8F4EC` fill, `#4A8C5C` text "Active"
   - Invited: `#FEF3E7` fill, `#C4784A` text "Invited"
