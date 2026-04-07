@@ -3,79 +3,352 @@
 
 - **Author:** Alex (PM)
 - **Date:** 2026-03-26
-- **Status:** Draft
-- **Version:** 1.0
+- **Status:** Feature Complete (Engagement + Full Preschool OS)
+- **Version:** 3.0
 - **Reviewed by:** CEO Review ✓ | Design Review ✓ | Eng Review ✓
+
+---
+
+## 🧠 CadenceSprout System Definition
+
+### 🎯 North Star Metric
+
+**% of parents who see at least 1 meaningful update about their child per day** ("% of parents receiving at least 1 update per day").
+
+This is the single metric that should guide all engagement and OS decisions in Phase 1.
+
+### Supporting Metrics
+
+- **Daily teacher posting rate** (per class)
+- **Parent weekly active rate (WAU)**
+- **Average posts per class per week**
+- **% of children with milestone coverage** (at least N milestones logged per term)
+- **Parent engagement** (views, reactions, comments per post)
+
+### 🔁 Core Loop (System View)
+
+At a system level, CadenceSprout operates on a simple repeating loop:
+
+> **Capture → Post → Notify → View → Re-engage → Capture**
+
+Every feature and trigger should reinforce this loop for teachers and parents.
+
+### ⚡ System Priorities (Non-negotiable)
+
+| Priority | Feature           | Rule                          |
+|----------|-------------------|-------------------------------|
+| 🔥 P0    | Posting + Feed    | Must be fastest, never blocked |
+| 🔥 P0    | Parent visibility | Every post must reach parents |
+| 🟡 P1    | Milestones        | Passive + AI-assisted         |
+| 🟡 P1    | Attendance        | Daily habit, < 60 sec         |
+| 🟢 P2    | Daily report      | Optional, never interrupt flow |
+| 🟢 P2    | Fees              | Calm, parent-first            |
+| ⚪ P3    | Admin dashboards  | Insight, not primary UX       |
+
+These priorities should be respected across design, engineering, and growth decisions. Conceptually:
+
+- **P0 = Posting + Feed** (teacher and parent, mobile + web).
+- **P1 = Milestones + Attendance** (child progress + core classroom ops).
+- **P2 = Reports + Fees + Admin surfaces** (daily reports, fee flows, dashboards).
+
+### 🔗 System Principles
+
+- **Engagement-first, ERP-second** — the teacher and parent feeds remain the primary surfaces; ERP features are layered in as contextual, lightweight flows.
+- **Nothing blocks posting** — no compliance step, form, or configuration screen should ever prevent a teacher from posting a simple update.
+- **Everything connects to the feed** — posts, milestones, attendance, incidents, and daily reports ultimately flow back into the child/parent narrative.
+- **AI assists, never interrupts** — AI suggestions (captions, child tags, milestones, summaries) should reduce friction, not add extra mandatory steps.
+- **Compliance is visible but calm** — privacy, records, and incidents are clearly labelled and accessible, but never dominate the emotional story.
+ - **Emotional > operational** — when in doubt, bias towards warm, human storytelling and reassurance over adding one more operational field or chart.
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#1-executive-summary)
-2. [User Personas](#2-user-personas)
-3. [Phase 1 Epics and User Stories](#3-phase-1-epics-and-user-stories)
-4. [Screen Inventory](#4-screen-inventory)
-  - 4.1 Teacher App (React Native — iOS + Android)
-  - 4.2 Parent App (React Native — iOS + Android)
-  - 4.3 Admin / Principal Web Dashboard (React + Vite)
-  - 4.4 Teacher Web (Browser — React + Vite)
-  - 4.5 Parent Web (Browser)
+- [1. Product Intent](#1-product-intent)
+- [2. Core Principles](#2-core-principles)
+- [3. System Behaviors](#3-system-behaviors)
+  - [3.1 Nudge Engine](#31-nudge-engine)
+  - [3.2 Draft System](#32-draft-system)
+  - [3.3 Offline System](#33-offline-system)
+  - [3.4 AI System](#34-ai-system)
+  - [3.5 Notification System](#35-notification-system)
+- [4. Data Model (MANDATORY)](#4-data-model-mandatory)
+- [5. Permissions](#5-permissions)
+- [0. Feature Capability Matrix (NEW — LOCK BEFORE UI)](#0-feature-capability-matrix-new--lock-before-ui)
+- [1. Executive Summary](#1-executive-summary)
+- [1A. Core Engagement Loops (NEW)](#1a-core-engagement-loops-new)
+  - [1B. Product Scope Expansion](#1b-product-scope-expansion)
+  - [1C. MVP vs V1 (Delivery Cut)](#1c-mvp-vs-v1-delivery-cut)
+  - [⚡ System Trigger Engine](#system-trigger-engine)
+  - [🔗 Cross-Feature Connections](#cross-feature-connections)
+- [2. User Personas](#2-user-personas)
+- [3. Phase 1 Epics and User Stories](#3-phase-1-epics-and-user-stories)
+  - [Epic 1: School Onboarding & Multi-Tenancy Foundation](#epic-1-school-onboarding--multi-tenancy-foundation)
+  - [Epic 2: Child Enrollment & Parent Onboarding](#epic-2-child-enrollment--parent-onboarding)
+  - [Epic 3: Teacher Post Flow (The Core Loop — FULLY REWRITTEN)](#epic-3-teacher-post-flow-the-core-loop--fully-rewritten)
+  - [Epic 4: Parent Feed Experience (REWRITTEN)](#epic-4-parent-feed-experience-rewritten)
+  - [Epic 5: Attendance Tracking](#epic-5-attendance-tracking)
+  - [Epic 6: Fee Management](#epic-6-fee-management)
+  - [Epic 7: Admin Dashboard & Engagement Score (REWRITTEN)](#epic-7-admin-dashboard--engagement-score-rewritten)
+  - [Epic 8: Communication Layer (NEW)](#epic-8-communication-layer-new)
+  - [Epic 9: Search & Retrieval (NEW)](#epic-9-search--retrieval-new)
+  - [Epic 10: AI Intelligence Layer (EXPANDED)](#epic-10-ai-intelligence-layer-expanded)
+  - [Epic 11: Admissions Management](#epic-11-admissions-management)
+  - [Epic 12: Parent Engagement System (NEW)](#epic-12-parent-engagement-system-new)
+  - [Epic 13: Admin Alerts & Intelligence (NEW)](#epic-13-admin-alerts--intelligence-new)
+- [4. Screen Inventory](#4-screen-inventory)
+  - [4.0 Screen ID → Epics Map (NEW)](#40-screen-id--epics-map-new)
+  - [4.1 Teacher App (React Native — iOS + Android)](#41-teacher-app-react-native--ios--android)
+  - [4.2 Parent App (React Native — iOS + Android)](#42-parent-app-react-native--ios--android)
+  - [4.3 Admin / Principal Web Dashboard (React + Vite)](#43-admin--principal-web-dashboard-react--vite)
+  - [4.4 Teacher Web (Browser — React + Vite)](#44-teacher-web-browser--react--vite)
+  - [4.5 Parent Web (Browser)](#45-parent-web-browser)
+- [5. Key API Contracts](#5-key-api-contracts)
+  - [5A. Core Data Model (NEW — LOCK BEFORE BUILD)](#5a-core-data-model-new--lock-before-build)
+  - [5B. Notification System (NEW)](#5b-notification-system-new)
+  - [5C. Event Flows & State Persistence (NEW)](#5c-event-flows--state-persistence-new)
+- [6. Non-Functional Requirements](#6-non-functional-requirements)
+  - [6.1 DPDP Act 2023 Compliance](#61-dpdp-act-2023-compliance)
+  - [6A. Permissions Matrix (NEW)](#6a-permissions-matrix-new)
+  - [6.2 Performance Targets](#62-performance-targets)
+  - [6.3 Accessibility](#63-accessibility)
+  - [6.4 Security](#64-security)
+  - [6B. Edge Case Handling (NEW)](#6b-edge-case-handling-new)
+- [7. Technology Architecture](#7-technology-architecture)
+- [8. Phase 2 — Post First 10 Paying Customers](#8-phase-2--post-first-10-paying-customers)
+  - [Epic P2-1: Razorpay Auto-Billing](#epic-p2-1-razorpay-auto-billing)
+  - [Epic P2-2: Hindi + Tamil Language Support](#epic-p2-2-hindi--tamil-language-support)
+  - [Epic P2-3: Per-Class and Per-Teacher Engagement Score](#epic-p2-3-per-class-and-per-teacher-engagement-score)
+  - [Epic P2-4: HRMS — Staff Management](#epic-p2-4-hrms--staff-management)
+  - [Epic P2-5: Official WhatsApp Business API Migration](#epic-p2-5-official-whatsapp-business-api-migration)
+  - [Epic P2-6: Offline-First Data Sync](#epic-p2-6-offline-first-data-sync)
+  - [Epic P2-7: Extended Content — Quizzes, Library, Live Camera](#epic-p2-7-extended-content--quizzes-library-live-camera)
+  - [Epic P2-8: On-Server ML Model for Milestone Suggestion](#epic-p2-8-on-server-ml-model-for-milestone-suggestion)
+  - [Growth Hooks (NEW)](#growth-hooks-new)
+- [9. Phase 3 — Franchise and Global](#9-phase-3--franchise-and-global)
+  - [Epic P3-1: White-Label and Franchise Chain Support](#epic-p3-1-white-label-and-franchise-chain-support)
+  - [Epic P3-2: Arabic Language and RTL UI (Dubai Market)](#epic-p3-2-arabic-language-and-rtl-ui-dubai-market)
+  - [Epic P3-3: CRM Integrations](#epic-p3-3-crm-integrations)
+  - [Epic P3-4: Southeast Asia Expansion](#epic-p3-4-southeast-asia-expansion)
+  - [Epic P3-5: Schema-Per-Tenant (Enterprise Isolation)](#epic-p3-5-schema-per-tenant-enterprise-isolation)
+- [10. Success Metrics](#10-success-metrics)
+  - [Phase 1 Launch Criteria (Month 10)](#phase-1-launch-criteria-month-10)
+  - [Engagement Score Definition](#engagement-score-definition)
+  - [3-Month Pilot Milestones](#3-month-pilot-milestones)
+  - [6-Month Growth Milestones](#6-month-growth-milestones)
+  - [12-Month ARR Target](#12-month-arr-target)
+  - [Leading Indicators (Weekly Tracking)](#leading-indicators-weekly-tracking)
+- [Appendix: Pre-Build Blockers](#appendix-pre-build-blockers)
 
-## Feature Summary (At-a-glance)
+---
 
-The table below summarizes Phase 1 features and which user-facing surfaces (mobile/web) they apply to. Use this as a quick reference when planning UI work, QA, and release scope.
+## 1. Product Intent
 
-| Feature | Teacher Mobile | Parent Mobile | Teacher Web | Parent Web | Admin Web | Notes |
-|---|:---:|:---:|:---:|:---:|:---:|---|
-| Parent feed (photo/video posts) | ✓ (post, tag) | ✓ (view, react/comment) | ✓ (post, manage) | ✓ (view, react) | ✓ (engagement) | Core Seesaw-style layer |
-| AI activity tagging & caption drafts | ✓ (suggest & edit) | ✕ | ✓ (suggest & edit) | ✕ | ✕ | AI assists teachers when composing posts |
-| NEP milestone tracker & milestone tags | ✓ (add/select) | ✓ (view child's milestones) | ✓ | ✓ | ✓ | Milestones visible across surfaces |
-| WhatsApp magic-link parent onboarding | ✕ | ✓ (entry point via WhatsApp) | ✕ | ✓ | ✕ | Web-first magic-link; mobile deep-link to app |
-| Year-end developmental portfolio export | ✕ | ✓ (download/share) | ✓ | ✓ | ✓ | Generated by platform, accessible in admin and parent views |
-| Admissions management | ✕ | ✕ | ✕ | ✕ | ✓ | Admin-facing ERP feature |
-| Fee management & invoicing | ✕ | ✕ | ✕ | ✕ | ✓ | Admin / finance workflows on web dashboard |
-| Attendance tracking | ✓ (daily mark) | ✕ | ✓ (bulk/roster) | ✕ | ✓ | Teachers primarily use mobile; admin views aggregate data |
-| Staff management (invite, roles) | ✕ | ✕ | ✓ | ✕ | ✓ | Admin web + Teacher web for assignments |
-| Self-serve school onboarding & setup checklist | ✕ | ✕ | ✓ (setup) | ✕ | ✓ | Admin web flow; some invite links trigger mobile actions |
-| Push & WhatsApp notifications | ✓ (send triggers) | ✓ (receive) | ✓ | ✓ | ✓ | Notifications originate from server; delivery via Wapi/Messaging provider |
-| Optimistic post UI & upload retry | ✓ | ✕ | ✓ | ✕ | ✕ | Teacher-side UX for fast feedback and offline handling |
-| Magic-link web feed (no install) | ✕ | ✓ (web view) | ✕ | ✓ (web view) | ✕ | Parent can view without installing the app |
+**Product intent:** CadenceSprout helps teachers share daily classroom moments with parents, turning the school day into a warm, ongoing story instead of a once-a-term report.
 
-## Action Required: Author (Alex) — Step-by-step Screen Designs
+**Primary goal (Phase 1):** At least **1 meaningful update per child per day** visible to at least one guardian.
 
-Alex: the design agent needs a step-by-step breakdown for each screen to produce pixel-level designs and wireframes. Please expand the PRD with the following, per screen (one screen per sub-section) in order of priority:
-- Screen name & route (e.g., `T-1: Home Feed` — `/`)
-- Primary user goal for this screen (one sentence)
-- Primary user flows (1-3 numbered happy-path steps)
-- All important states (loading, empty, error, offline)
-- Key UI elements and hierarchy (header, main card, FAB, footer, etc.)
-- Critical interactions (micro-interactions, confirmations, modals)
-- Accessibility notes (focus order, contrast, touch target sizes)
-- Responsive/mobile vs web differences (if applicable)
-- Priority (P0/P1) and acceptance criteria (copy existing Acceptance Criteria)
-- Desired screens to be delivered to the design agent (PNG wireframe, HTML sketch, or Figma link)
+**Simple core loop (per child):**
 
-Example:
-- `T-1 Home Feed` — `/`
-- Goal: See today's class posts quickly.
-- Flows:
-  1. Open app → feed loads (skeleton) → see posts.
-  2. Tap FAB → select photos → Post Composer opens.
-  3. Pull-to-refresh loads new posts.
-- States: Loading, Empty (no posts), Offline (stale content shown).
-- Key elements: header (school + class), post card (image, caption), FAB, bottom nav.
-- Accessibility: announce post count, ensure FAB has 44px touch target.
-- Priority: P0. Acceptance: feed loads in <2s on 3G throttled simulant.
-- Deliverable: PNG wireframe + list of copy strings.
+> **Capture → Post → Parent views → Teacher feels reinforced → Repeat**
 
-Please add these sub-sections for the top 10 screens first (Teacher Home, Post Composer, Parent Feed, Magic-link Web view, Admin Dashboard hero, Attendance, Class Roster, Child Detail, Milestone Tracker, Login/OTP). Once you add them, notify me and I'll run the design sketch workflow or hand off to the `plan-design-review` skill.
+This per-child loop should remain the default lens for evaluating features, trade-offs, and experiments. See [🧠 CadenceSprout System Definition](#-cadencesprout-system-definition) for the system-level loop and metrics.
 
-5. [Key API Contracts](#5-key-api-contracts)
-6. [Non-Functional Requirements](#6-non-functional-requirements)
-7. [Technology Architecture](#7-technology-architecture)
-8. [Phase 2 — Post First 10 Paying Customers](#8-phase-2--post-first-10-paying-customers)
-9. [Phase 3 — Franchise and Global](#9-phase-3--franchise-and-global)
-10. [Success Metrics](#10-success-metrics)
+---
+
+## 2. Core Principles
+
+These are the day-to-day design and implementation rules that sit on top of the System Principles above:
+
+1. **Speed > completeness** — shipping a fast, reliable way to share a moment beats adding one more field, filter, or configuration.
+2. **ERP is optional, not mandatory** — attendance, fees, admissions, and records should be present and useful, but they **never block** posting or viewing the feed.
+3. **AI assists, never blocks** — AI can draft captions, suggest tags, infer milestones, and summarise days; the human can always ignore, edit, or override with zero friction.
+4. **Offline-first reliability** — teachers should be able to capture and queue posts even on flaky school Wi‑Fi; the system is responsible for safe delivery when connectivity returns.
+5. **Warm, human communication** — copy, defaults, and visuals should feel like a friendly teacher talking to a parent, even when the content is operational (fees, incidents, attendance).
+
+---
+
+## 3. System Behaviors
+
+This section summarises the cross-cutting system behaviours that power drafts, offline, nudges, AI, and notifications. Detailed event and trigger definitions live in [⚡ System Trigger Engine](#system-trigger-engine), [5B. Notification System (NEW)](#5b-notification-system-new), and [5C. Event Flows & State Persistence (NEW)](#5c-event-flows--state-persistence-new).
+
+### 3.1 Nudge Engine
+
+- **Scope:** One nudge **per teacher per class per day**.
+- **Detection window:** 00:00–12:00 local time.
+  - If **no successful POST_CREATED event** exists for that class in this window, the class is eligible.
+- **Fire window:** The nudge is scheduled to fire between **12:00–12:15 PM local time**.
+- **Cancel conditions:**
+  - If a POST_CREATED event arrives **before** the nudge fires, the nudge is cancelled.
+  - If the teacher dismisses the nudge, it is not re‑sent the same day.
+- **Channel & surface:**
+  - Delivered as an in‑app banner on **T‑1 / TW‑1** and, where appropriate, as a push notification (see [Notification System](#5b-notification-system-new)).
+
+### 3.2 Draft System
+
+- **Auto‑save cadence:** While composing a post (T‑2 / TW‑2):
+  - Auto‑save the draft **at least every 10 seconds** after any change, and
+  - On navigation away, app background, or app close.
+- **Draft contents:** A draft captures **media references**, **caption text**, **tagged children**, and any **incident stub** attached in the composer.
+- **Restore behaviour:**
+  - On reopening the composer on the same day with an unsent draft, restore the draft and surface a light prompt: "You have an unsent draft from today" with **Resume** / **Discard**.
+- **Failure handling:**
+  - If upload fails after the teacher taps **POST**, the post remains in the feed as a **draft/outbox item** with a clear retry state; no content is lost.
+  - The teacher can **tap to retry** or **cancel**; cancelling removes it from the queue and prevents it from reaching parents.
+
+### 3.3 Offline System
+
+Even before full offline-first (Phase 2), CadenceSprout must behave predictably on flaky networks.
+
+- **Local queue:** When the device is offline or the network is unstable:
+  - Post creations, comment submissions, and reactions are written to a **local outbox queue** instead of failing.
+- **UI state:** Queued items are clearly marked as **"Sending when online"** (e.g., clock icon / "Queued") and are not shown in parent feeds until confirmed by the server.
+- **Retry schedule (per item):**
+  - 1st retry after **5 seconds**
+  - 2nd retry after an additional **30 seconds**
+  - 3rd retry after an additional **2 minutes**
+  - Subsequent retries every **10 minutes** up to a configurable max.
+- **Conflict & cancellation:**
+  - If a queued item is successfully sent from another device for the same teacher/class, duplicates are deduplicated server‑side using idempotency keys.
+  - The teacher can cancel any queued item from the outbox; cancelled items are never delivered to parents.
+
+### 3.4 AI System
+
+**AI Captioning**
+
+- **Trigger:** When the teacher selects photo(s)/video(s) in the composer, a caption draft request is sent automatically.
+- **Target latency:** AI caption visible in the composer in **< 3 seconds** (P75), with loading shimmer while pending.
+- **Behaviour:**
+  - The teacher can post the AI draft as‑is, edit freely, or delete and write their own.
+  - If the caption job fails or times out, the caption field simply remains manual; no blocking error is shown.
+
+**Face / Child Detection**
+
+- The system runs face detection on uploaded media (where school + parent consent is given) to suggest child tags.
+- **Confidence thresholds (summary; see [Epic 10: AI Intelligence Layer](#epic-10-ai-intelligence-layer-expanded) for detail):**
+  - **> 90%** → high‑confidence suggested tag (pre‑checked chip).
+  - **70–90%** → low‑confidence suggested tag (visually distinct; teacher must confirm).
+  - **< 70%** → no suggestion.
+- Child names only appear in the final caption where the tag has been teacher‑confirmed; otherwise captions use generic language ("the children", "the class").
+
+### 3.5 Notification System
+
+High-level behaviour (see [5B. Notification System (NEW)](#5b-notification-system-new) for the canonical event table):
+
+**For teachers**
+
+- **Parent interactions:** When a parent comments on or reacts to a teacher's post, the teacher receives an in‑app notification and, where enabled, a push notification **immediately**.
+- **Midday posting reminder:** If there has been **no post today** for a class by around **12 PM local time**, the teacher receives a single **"No update yet today"** push/in‑app nudge for that class (see [3.1 Nudge Engine](#31-nudge-engine)).
+  - One reminder per class per day; it is cancelled if a post is created before it fires.
+
+**For parents**
+
+- **New post about their child:** Push + optional WhatsApp notification **instantly** when a new post that includes their child is published.
+- **Incident logged with parent notification enabled:** Immediate high‑priority notification (push +, where configured, WhatsApp) with calm, factual copy and a link to the relevant child record / incident detail.
+- **Daily report (T‑8) shared:** When a daily report is saved and marked as shared, parents receive an evening notification in a **6 PM local-time window** summarising the day.
+
+**Global rules**
+
+- Cap at **3 push notifications per parent per day**; non‑critical events are batched into a daily digest where possible.
+- WhatsApp is reserved for critical updates, high‑value engagement, and re‑engagement flows (onboarding, fee reminders, portfolios), not for spam.
+
+---
+
+## 4. Data Model (MANDATORY)
+
+This section gives a **conceptual** view of the core records that power the engagement loop. The **authoritative schema** is defined in [5A. Core Data Model (NEW — LOCK BEFORE BUILD)](#5a-core-data-model-new--lock-before-build).
+
+### 4.1 Post
+
+Represents a single shareable classroom moment.
+
+```text
+Post {
+  id: uuid
+  class_id: uuid
+  teacher_id: uuid
+  media_urls: string[]    // photos / videos
+  caption: string
+  created_at: timestamp
+  tagged_children: Child[]    // via PostChildTag join table
+  milestones: Milestone[]     // via PostMilestone join table
+}
+```
+
+### 4.2 Child
+
+Represents an enrolled child and their relationships.
+
+```text
+Child {
+  id: uuid
+  class_id: uuid
+  name: string
+  dob: date
+  parents: Parent[]   // Phase 1 stored as primary parent_id, expandable later
+}
+```
+
+### 4.3 Draft (Composer / Outbox)
+
+Represents unsent work in progress on the client and/or server.
+
+```text
+Draft {
+  temp_id: uuid              // client-generated
+  class_id: uuid
+  teacher_id: uuid
+  media_urls: string[]
+  caption: string
+  child_ids: uuid[]
+  incident_stub?: IncidentStub   // optional inline incident
+  saved_at: timestamp
+  status: "local" | "queued" | "failed"
+}
+```
+
+Drafts may never reach the server (purely local) but, when they do, they map 1:1 onto the eventual `Post` fields.
+
+### 4.4 Incident
+
+Represents a logged incident linked to children and, optionally, a contextual post.
+
+```text
+Incident {
+  id: uuid
+  child_ids: uuid[]      // one or more children involved
+  class_id: uuid
+  post_id?: uuid         // optional link back to a post
+  type: string           // e.g., fall, behaviour, medical
+  severity: "info" | "minor" | "major"
+  description: string
+  occurred_at: timestamp
+  notify_parent: boolean
+}
+```
+
+All incidents are written into **Child Records (A‑11)** and the child timeline, and can optionally trigger parent/admin notifications as defined in [3.5 Notification System](#35-notification-system).
+
+---
+
+## 5. Permissions
+
+This is the high‑level view of who can see and edit what. The canonical, implementation-level matrix lives in [6A. Permissions Matrix (NEW)](#6a-permissions-matrix-new).
+
+- **Teacher**
+  - Can **view**: children and posts in their own class only.
+  - Can **create/edit**: posts, attendance records for their class, and incident records attached to those posts/children.
+  - Cannot access other classes or school‑wide data except where explicitly granted an admin role.
+
+- **Parent**
+  - Can **view**: posts, milestones, incidents, and records for **their own child only**.
+    - A parent only sees a post if their child is tagged and the tag is teacher‑confirmed.
+  - Can **act**: react to and comment on posts, manage notification and privacy settings for their child.
+
+- **Admin / Principal**
+  - Can **view**: all classes, children, posts, incidents, attendance, fees, and admissions data within their school.
+  - Can **edit**: school, class, teacher, child, and fee records; resolve incidents; manage admissions pipelines.
+  - Cannot see data across schools; access is scoped to their own school tenancy.
 
 ---
 
@@ -110,6 +383,296 @@ A pilot school from Cadence Infotech's existing network is ready to go — the s
 ### Launch Target
 
 Month 10. Success is 1 preschool chain (5+ centers) fully live, ≥70% of enrolled parents using the feed, ≥3 posts per class per day, self-serve onboarding live, NPS from teachers ≥ 30.
+
+---
+
+## 🆕 1B. Product Scope Expansion
+
+CadenceSprout evolves from an engagement-first product into a full preschool operating system.
+
+It consists of:
+
+1. **Engagement Layer (Primary)**
+  - AI-powered posts
+  - Parent feed
+  - Milestones & portfolio
+
+2. **Operations Layer**
+  - Fees & payments
+  - Admissions CRM
+  - Attendance & reporting
+  - Staff management
+
+3. **Compliance Layer**
+  - Child records
+  - Medical information
+  - Incident tracking
+  - Permissions
+
+All operational features are embedded into existing flows to avoid ERP-style complexity.
+
+---
+
+## 🚀 1C. MVP vs V1 (Delivery Cut)
+
+Phase 1 is broad. This section makes clear **what must exist for a usable pilot (MVP)** vs what rounds out **full V1**.
+
+### MVP — "Post + See" (first live chain)
+
+**Goal:** Prove the core engagement loop works in 1 pilot chain (5+ centres).
+
+- **Teacher (Sunita)**
+  - **T-1** — Teacher Feed (Home Feed) as the primary daily surface.
+  - **T-2** — Composer (photo/video, caption, child tagging).
+  - **T-5** — Class Roster (basic list of children + linked parents).
+  - Web twins (TW-2/TW-3/TW-5) may be implemented, but are optional for the very first pilot.
+
+- **Parent (Meera)**
+  - **P-1** — Magic-link feed entry + OTP (with P-0/P-0A as needed).
+  - **P-3** — Parent Feed with "Today at school" summary and story-like posts.
+  - Web feed (PW-2) can ship later but must match P-3 behaviour when it does.
+
+- **Admin (Rajesh)**
+  - Basic school/class/teacher setup (Epics 1–2).
+  - **Basic roster only** — read-only list of classes, children and linked parents; no dashboards, fees, or advanced reports.
+
+**Out of scope for MVP (can be stubbed or manual):** Attendance flows, milestones UI, reports, fees, daily report, incident logging, advanced dashboards.
+
+### V1 — "Operate + Learn" (Phase 1 complete)
+
+**Goal:** Turn CadenceSprout into a **usable preschool OS** for a chain that wants both engagement and light operations.
+
+- **Add for Teachers:**
+  - Attendance (T-4 / TW-4) with < 60s per class target.
+  - Milestone tracker (T-6 / TW-6) with AI suggestions from posts.
+  - Daily report (T-8) — optional, quick structure on top of posts.
+  - Incident logging (T-9) into child records.
+
+- **Add for Parents:**
+  - Milestone progress & portfolio (P-5, P-6, PW-4).
+  - Incident history (P-11).
+  - Fees overview & payments (P-9).
+
+- **Add for Admins:**
+  - Attendance dashboard (A-5).
+  - Fees management + overview (A-4, A-9).
+  - Admissions pipeline (A-3, A-10).
+  - Child records & compliance hub (A-11).
+  - Staff overview (A-6, A-12).
+
+MVP must be **shippable on its own** and measured primarily on the **North Star** and basic teacher/parent satisfaction; V1 layers in attendance, milestones, reports, and fees without breaking the core posting + feed loop.
+
+---
+
+## 🆕 0. Feature Capability Matrix (NEW — LOCK BEFORE UI)
+
+### 0.1 Persona Capability Definition
+
+**Teacher (Content Creation + Classroom Ops)**
+
+- AI-assisted post creation
+- Child tracking (milestones, attendance)
+- Parent interaction (comments + messaging)
+- Class management (roster visibility)
+- AI nudges for productivity
+
+**Parent (Engagement + Trust Layer)**
+
+- Personalized child feed
+- React, comment, message teacher
+- Milestone tracking + insights
+- Portfolio + memory storage
+- Notifications + summaries
+
+**Admin / Principal (Control Tower)**
+
+- Engagement monitoring
+- Operational dashboards (attendance, fees)
+- Staff & admissions management
+- Alerts & insights
+
+### 0.2 Platform Capability Mapping
+
+| Capability           | Mobile App | Web App | Notes                   |
+|----------------------|-----------:|--------:|-------------------------|
+| Teacher Core Flow    |         ✅ |      ✅ | Strong                  |
+| Parent Experience    |         ✅ |      ✅ | Strong                  |
+| Admin Control        |         ❌ |      ✅ | Mobile gap              |
+| Communication        |         ⚠️ |      ⚠️ | Needs upgrade           |
+| Search               |         ❌ |      ❌ | Missing                 |
+| AI Layer             |         ⚠️ |      ⚠️ | Needs expansion         |
+| Offline              |         ❌ |      ❌ | Phase 2                 |
+
+#### 🧠 CadenceSprout — Persona vs Platform Capability Matrix
+
+##### 👩‍🏫 1. Teacher Persona — Capabilities
+
+| Feature Area              | Teacher Mobile App                               | Teacher Web App                               | Gaps / Notes                                  |
+|---------------------------|--------------------------------------------------|-----------------------------------------------|-----------------------------------------------|
+| **Authentication**        | Phone + password login                           | Same                                          | ✅ Complete                                   |
+| **Post Creation (Core Loop)** | Photo/video → AI caption → tag children → post  | Drag-drop media + same flow                   | ⚠️ No offline posting (Phase 2)              |
+| **AI Captioning**         | Auto draft + edit                                | Same                                          | ⚠️ No tone/style control                      |
+| **AI Child Tagging**      | Face recognition + confirm                       | Same                                          | ⚠️ No learning loop / correction feedback     |
+| **Manual Tagging**        | Picker modal                                     | Table/search UI                               | ✅                                           |
+| **Milestone Tagging**     | Optional tagging                                 | Same                                          | ⚠️ Taxonomy UX complexity risk                |
+| **Feed View (Class)**     | Mobile feed                                      | 2-column desktop feed                         | ✅                                           |
+| **Parent Engagement Insight** | "Viewed by X parents"                       | Same                                          | ⚠️ No per-parent insight                      |
+| **Comments / Interaction**| View + reply                                     | Same                                          | ⚠️ No moderation tools                        |
+| **Attendance**            | Mark daily                                       | Table bulk marking                            | ✅                                           |
+| **Roster Management**     | View children + parents                          | Table + detail drawer                         | ⚠️ Cannot edit (admin dependent)              |
+| **Child Detail View**     | Profile + milestones + posts                     | Same                                          | ✅                                           |
+| **Milestone Tracker**     | Per child                                        | Same                                          | ⚠️ No insights (lagging/leading child)        |
+| **Notifications**         | Toggles                                          | Same                                          | ⚠️ No smart reminders (AI nudges)             |
+| **Settings / Profile**    | Full                                             | Full                                          | ✅                                           |
+
+---
+
+## 🧠 1A. Core Engagement Loops (NEW)
+
+CadenceSprout is built around three reinforcing engagement loops — teacher, parent, and admin — that must all be healthy for the product to succeed.
+
+**Teacher Loop**
+
+- Capture moment → AI assists → Post → Parent reacts → Teacher feels validated → Repeat
+
+**Parent Loop**
+
+- Receive notification → View child update → React/comment → Emotional reward → Return daily
+
+**Admin Loop**
+
+- Check dashboard → Detect issues → Take action → Improve metrics → Repeat weekly
+
+---
+
+## ⚡ System Trigger Engine
+
+The **System Trigger Engine** glues the engagement loops together. It defines when nudges, notifications, and summaries fire so that teachers keep posting, parents keep returning, and admins only see the important exceptions.
+
+**High-level rules (summary):**
+
+- **Teacher:**
+  - No post by 12 PM → show T-1A emotional nudge.
+  - No post by 2 PM → strong nudge + push notification.
+- **Parent:**
+  - New post → instant notification.
+  - Not viewed within ~6 hours → gentle reminder.
+- **Daily Report:**
+  - Soft nudge around 4 PM.
+  - Never blocks posting or core feed actions.
+- **Incident:**
+  - If "Notify parent" is ON in T-9 → instant parent alert + history entry.
+- **Offline:**
+  - All triggerable actions must **queue locally when offline** and auto-sync when back online; triggers fire based on the underlying events, not just when the app is open.
+
+### 1. Teacher Nudges
+
+| Trigger        | Condition             | Action                          |
+|----------------|-----------------------|---------------------------------|
+| Morning nudge  | No post by 10:30 AM   | Subtle banner on T-1 Home Feed  |
+| Midday nudge   | No post by 12:00 PM   | Emotional banner (T-1A variant) |
+| Strong nudge   | No post by 2:00 PM    | Strong CTA + push notification  |
+
+- All nudges must respect the **"nothing blocks posting"** rule — they are encouragement, never mandatory dialogs.
+- Strong nudges should be rate-limited so a teacher never feels spammed.
+
+### 2. Parent Engagement
+
+| Trigger        | Condition                    | Action                            |
+|----------------|------------------------------|-----------------------------------|
+| New post       | Post created for a child     | Push notification to linked parents |
+| Not viewed     | 6 hours, parent hasn’t opened | Reminder notification (gentle)   |
+| Weekly summary | Sunday evening               | Digest notification / summary card |
+
+- New post notifications should be **child-specific and emotional**, not generic app spam.
+- Weekly summary can roll up posts, milestones, and daily reports into a single, calm digest.
+
+### 3. Daily Report Prompt
+
+| Trigger      | Condition          | Action                        |
+|--------------|--------------------|-------------------------------|
+| After school | 3–5 PM local time  | Suggest Daily Report (T-8)    |
+| Skip         | No interaction     | Do not repeat; no nagging     |
+
+- Daily report prompts must always remain **optional** and should never block the core posting flow.
+
+### 4. Fee Reminder
+
+| Trigger    | Condition               | Action                                  |
+|------------|-------------------------|-----------------------------------------|
+| Upcoming   | 3 days before due date  | Soft reminder (P-9 + notification)     |
+| Overdue    | 1 day after due date    | Highlight in parent feed / P-9         |
+| Escalation | 7 days after due date   | Admin alert on A-1 / A-9 (overdue list) |
+
+- Parent-side reminders must feel **calm and informational**, not aggressive collections.
+- Admin escalation should surface as **alerts before charts** on the dashboard and Fees Overview.
+
+### 5. Incident Flow
+
+| Trigger        | Condition                | Action                                          |
+|----------------|--------------------------|-------------------------------------------------|
+| High severity  | Marked "High" in T-9    | Immediate parent + admin alert                  |
+| Medium         | Saved in T-9             | Parent notified (if teacher enabled toggle)     |
+| Low            | Saved in T-9             | Logged only (child record, no notification)     |
+
+- All incidents are written into **Child Records (A-11)** and the **child timeline (T-5A)**.
+- High severity flows must be implemented with extra care (clear copy, calm but unmissable UI).
+
+---
+
+## 🔗 Cross-Feature Connections
+
+This section makes explicit how features depend on and reinforce each other. Everything ultimately connects back to **posts and the feed**.
+
+### 📸 Post → Everything
+
+- **Post → triggers parent notification** (immediate push for linked parents).
+- **Post → updates daily summary** shown on P-3 (Parent Home Feed) and in weekly digests.
+- **Post → suggests milestones** in T-6 (Milestone Tracker) via AI based on recent content.
+- **Post → visible in child timeline** on T-5A (Child Detail / Timeline).
+
+### 📊 Attendance → System
+
+- **Attendance → shown in admin dashboard** (A-1, A-5) for class-level health.
+- **Attendance → summarized in daily report** (T-8) so parents see presence as part of the day story.
+- **Absence → optional parent visibility** — absent status can surface as a subtle note in parent surfaces when schools opt in.
+
+### 🧠 Milestones
+
+- **Milestones → suggested from posts (AI)** when the AI Intelligence Layer detects patterns.
+- **Milestones → visible in parent progress** views (P-5, PW-4) so parents see long-term growth.
+- **Milestones → appear in portfolio** (P-6, PW-4/PW-? as year-end/term-end exports).
+
+### 🧾 Incident
+
+- **Incident → appears in child timeline** (T-5A) with appropriate labels.
+- **Incident → optional parent notification** via P-11 Incident History and notifications, based on T-9 sharing settings.
+- **Incident → admin alert if severe** via A-1 dashboard alerts and A-11 Child Records.
+
+### 💰 Fees
+
+- **Overdue fees → appear in parent feed** as a subtle card and in P-9 Fees & Payments.
+- **Payment → confirmation notification** to parents and reflected in A-9/A-4 admin views.
+- **Admin → sees overdue list first (not charts)** in Fees Overview (A-9) and Fee Management (A-4).
+
+### 📘 Daily Report
+
+- **Daily report → appears in parent feed summary** (P-3) and weekly digest.
+- **Daily report → aggregates:**
+  - meals
+  - naps
+  - activities
+  - attendance
+
+---
+
+### Design Principle: Engagement-First UI (NEW)
+
+CadenceSprout treats engagement as the primary surface and ERP as supporting context.
+
+- **Feed is always primary** — for both teachers and parents, the feed (posts and child updates) is the main entry point and first tab; operational tasks should not displace this.
+- **ERP features are secondary and contextual** — fees, admissions, attendance, staff, and compliance surfaces appear where they naturally belong (e.g., tiles on the admin dashboard, cards under a child profile), not as heavyweight, standalone dashboards.
+- **Avoid clutter and dashboard overload** — every screen should minimise cognitive load; we prefer a small number of high-signal tiles and views over dense tables and charts, especially on mobile.
 
 ---
 
@@ -192,7 +755,7 @@ Month 10. Success is 1 preschool chain (5+ centers) fully live, ≥70% of enroll
 
 ### Overview
 
-Phase 1 is organized into 8 epics covering the complete product. All stories are scoped to deliver Phase 1 launch criteria (Month 10).
+Phase 1 is organized into 7 core epics (Epics 1–7) covering the complete product. Epics 8–13 capture closely related Phase 2+ expansions that should be considered during design but are not in Phase 1 build scope. All stories are scoped to deliver Phase 1 launch criteria (Month 10).
 
 ---
 
@@ -333,10 +896,20 @@ Acceptance Criteria:
 
 ---
 
-### Epic 3: Teacher Post Flow (The Core Loop)
-**Goal:** Enable a teacher to post a class activity in ≤3 taps, with AI-generated caption and child tags.
+### Epic 3: Teacher Post Flow (The Core Loop — FULLY REWRITTEN)
+**Goal:** Enable teachers to capture → post → confirm engagement with minimal effort (< 5 minutes/day).
 **Priority:** P0 — this is the product's primary daily usage loop.
 **Timeline:** Month 3-4 (feed) + Month 5-6 (AI layer)
+
+---
+
+**Story 3.0: Daily Posting Guidance**
+As a teacher, I want the app to guide me to post daily so I don’t forget.
+
+Acceptance Criteria:
+- If no post has been created by 12 PM local time, a reminder banner is shown on the Teacher Home Feed prompting the teacher to share an update. The copy should be emotionally framed from the parent's perspective (e.g., "Parents haven’t seen an update today" with subtext like "Share even a small moment from class").
+- If no post has been created by 3 PM local time, the floating action button (FAB) on the Teacher Home Feed pulses to draw attention to posting.
+- After at least one post is created for the day, the reminder banner and FAB pulse stop for that day and a positive reinforcement message is shown (e.g., "Nice work — today's update is live for parents.").
 
 ---
 
@@ -372,9 +945,11 @@ As a teacher, I want to see which children are in my photo (suggested by AI) so 
 Acceptance Criteria:
 - Given I arrive at the Post Composer, then face recognition runs asynchronously in the background — it never blocks the posting UI
 - Given face recognition is pending, then child chips display in a greyed/dashed state with text "Identifying..."
-- Given face recognition returns results, then chips with confidence > 90% show as suggested (green chip, child name), and chips with 70-90% show with a low-confidence indicator. Chips with < 70% confidence are not shown
-- Given I tap a chip to confirm a tag, then the chip turns solid and the child's name appears in the caption draft if applicable
-- Given I tap a chip to remove a suggested tag, then the child is removed from `post_children` and will not appear in parents' feeds
+- Given face recognition returns results, then suggested chips are rendered under a label such as "AI detected these children" and each chip displays the child name plus a confidence indicator (e.g., "Rohan · 92%").
+- Given face recognition returns results, then chips with confidence > 90% show as high-confidence suggestions, and chips with 70–90% show as low-confidence suggestions (visually distinct). Chips with < 70% confidence are not shown at all.
+- Given I want to confirm or reject a suggested tag, then each AI-suggested chip exposes quick actions (✓ confirm / ✕ remove) so I can explicitly accept or remove the suggestion with one tap.
+- Given I tap to confirm a suggested chip (via ✓ or by tapping the chip), then the chip turns into a "confirmed" state and the child's name may appear in the caption draft if applicable.
+- Given I tap ✕ on a suggested chip, then the chip is removed and the child is removed from `post_children` and will not appear in parents' feeds.
 - Given face recognition fails or no consent exists for a child, then no chips appear and I see "Add children manually" — a tappable area that opens a child picker from the class roster
 - Given a child has no DPDP consent (`dpdp_consent_at IS NULL`), then Rekognition is NOT called for that child — they must be tagged manually
 - Given I want to post without tagging any child, then this is allowed — the post goes to all parents in the class
@@ -400,45 +975,88 @@ Acceptance Criteria:
 - Given I tap [POST], then the post appears in the feed immediately (optimistic UI) — I do not wait for the upload to complete
 - Given the upload is < 80% complete, then the optimistic post shows with a blurred/faded overlay and a progress bar
 - Given the upload completes, then the blur is removed and the post appears in full quality
-- Given the upload fails (network drop), then a toast appears: "Upload failed. Tap to retry." The post remains visible in my feed as a draft with a retry indicator
+- Given the upload fails (network drop), then a toast appears: "Upload failed. Tap to retry." The post remains visible in my feed as a draft with a retry indicator and the underlying post content (media + caption + tags) is persisted so that no work is lost.
 - Given I tap retry, then the upload resumes with exponential backoff (retry 1: 5s, retry 2: 10s, retry 3: 20s)
 - Given the post is published, then a Pusher event is broadcast to all parents of tagged children on the `class.{class_id}.feed` channel
 - Given the post is published, then a Wapi WhatsApp notification is sent to parents of tagged children (or all class parents if no specific tags): "[School name]: [Child name] had a great moment today! See it here: [magic-link]"
 
 ---
 
-**Story 3.6: Teacher Home Feed**
-As a teacher, I want to see all posts for my class so that I know what has been shared today.
+**Story 3.6: Optional Daily Report Fields (NEW)**
+As a teacher, I want to optionally add a short daily report to my post so that admins and parents can see a structured summary of the day without adding extra work.
 
 Acceptance Criteria:
-- Given I open the app, then the Home Feed shows posts for my class in reverse chronological order (most recent first)
-- Given the feed loads, then I see for each post: full-bleed photo, caption in Fraunces font, child tags, posted time, and a "viewed by X parents" count
-- Given my class has no posts yet, then I see: "Add your students to get started." with a button to the Class Roster
-- Given there are no posts today but prior posts exist, then recent posts are shown with today's date section header showing "No posts yet today"
-- Given I pull to refresh, then new posts load
-- Given the network is unavailable, then a persistent banner at the top shows "You're offline — showing saved content"
-- Given I tap a post, then I see the Post Detail screen with full photo, full caption, child tags, milestone tags, and parent view count
+- Given I am on the Post Composer, then there is an optional, collapsed "Daily report (optional)" section below the caption and tags, which I can expand to fill in structured fields such as: meal summary, nap summary, and key activities.
+- Given I do not expand or fill any daily report fields, then posting works exactly as today and no extra fields are required; the feature must never block the core post flow.
+- Given I choose to fill daily report fields, then those values are saved alongside the post in structured form (e.g., `post_daily_report` object) and can be surfaced in admin/parent reporting surfaces (e.g., daily summary, dashboards) without changing the visual layout of the core photo post.
+- Given a daily report has already been submitted for today for a given class, then the composer can pre-fill or indicate that a report exists (e.g., "Daily report already added today"), and additional posts default to not including another report unless the teacher explicitly edits it.
 
 ---
 
-### Epic 4: Parent Feed Experience
-**Goal:** Give parents a beautiful, reliable daily window into their child's school day.
+**Story 3.7: Drafts and Offline Posting (NEW)**
+As a teacher, I want my in-progress posts to be safely saved and retried if the network is unreliable so that I never lose work.
+
+Acceptance Criteria:
+- Given I have started composing a post (media selected and/or caption entered) but have not tapped [POST], then the app auto-saves my draft at sensible intervals (e.g., on navigation away or every N seconds) so that closing the composer does not lose my work.
+- Given I re-open the Post Composer on the same day with an unsent draft, then I see a clear but lightweight prompt such as "You have an unsent draft from today" with actions to **Resume draft** or **Discard**.
+- Given I tap **Resume draft**, then the previously saved media, caption, and child tags are restored into the composer.
+- Given I tap **Discard**, then the draft is deleted and the composer starts empty.
+- Given I tap [POST] while the device is offline or the network fails immediately, then the app informs me that the post will be sent when back online (e.g., "Offline — this post will send when you're back online"), and the post is queued locally for retry instead of being discarded.
+- Given a post is queued for retry, then it appears in my feed as a draft/outbox item with a clear state indicator (e.g., clock icon / "Sending when online") and will automatically retry when connectivity is restored.
+- Given I do not want a queued post to send anymore, then I can cancel it from the draft/outbox state (e.g., "Cancel" action on the draft card), which removes it from the queue and from parents' future feeds.
+
+---
+
+**Story 3.8: Inline Incident Logging (NEW)**
+As a teacher, I want an optional way to log an incident while posting so that important events are recorded in context without requiring a separate complex workflow.
+
+Acceptance Criteria:
+- Given I am composing a post and something notable but sensitive happens (e.g., a minor fall, behavioural incident), then I can expand an "Incident (optional)" section in the composer that lets me add: incident type (dropdown), brief description, time, and whether parents should be notified.
+- Given I submit a post with an incident attached, then the system creates a linked `incident` record associated to the child(ren), class, and post, and this record becomes visible in the admin's Child Records / Compliance view (Epic 16) without surfacing the full incident details in the public parent feed.
+- Given an incident is logged with "notify parents" enabled, then the relevant parents receive an appropriate notification (e.g., "Your child had a minor incident today; please see the note from school.") and see a clear but sensitive note attached to the relevant post or in a dedicated incident section, per product copy decisions.
+- Given no incident is logged, then the post behaves as a normal post and no incident records are created; the presence of the incident section must not alter the default post flow.
+
+---
+
+**Story 3.6: Teacher Home Feed (UPDATED)**
+As a teacher, I want to know what I’ve done today and what is pending so I can complete my work quickly.
+
+Acceptance Criteria (UPDATED):
+- Given I open the app, then the top of the Home Feed shows a daily status header for today's date.
+- Given I have not created any posts for my class today, then the daily status header shows a clear CTA to post (e.g., "No update yet — share a moment from today") that deep-links to the Post Composer.
+- Given I have created at least one post today, then the daily status header shows positive reinforcement (e.g., "Today's update is live — parents are seeing it now") instead of a CTA.
+- Given I scroll the Home Feed, then today's posts appear in a "Today" section at the top, followed by prior days' sections in reverse chronological order.
+- Given the feed loads, then I see for each post: full-bleed photo, caption in Fraunces font, child tag chips, posted time, a "Viewed by X parents" count, and a "% reach" indicator (X ÷ total enrolled parents for the class).
+- Given I am on the Home Feed, then the FAB is always visible in the bottom-right corner; if I have not yet posted for today, the FAB uses a pulsing animation state (per Story 3.0) until my first post for the day is successfully created.
+- Given I pull to refresh, then new posts load and the daily status header and reach metrics update.
+- Given the network is unavailable, then a persistent banner at the top shows "You're offline — showing saved content" while still showing the last known daily status header.
+- Given I tap a post, then I see the Post Detail screen with full photo, full caption, child tags, milestone tags, and parent view count.
+
+---
+
+### Epic 4: Parent Feed Experience (REWRITTEN)
+**Goal:** Ensure parents feel, "I didn’t miss anything important today" about their child’s school day.
 **Priority:** P0
 **Timeline:** Month 3-6
 
 ---
 
-**Story 4.1: Parent Home Feed**
-As a parent, I want to see my child's feed showing only posts where my child is tagged so that I see a personalized view.
+**Story 4.1: Parent Home Feed (UPDATED)**
+As a parent, I want to quickly understand my child’s day so that I feel I haven’t missed anything important.
 
 Acceptance Criteria:
-- Given I open the parent app, then I see posts in reverse chronological order where my child is tagged (confirmed by teacher)
-- Given a post exists where my child is not tagged but the class posted, then that post is NOT shown in my personal feed
-- Given the feed is loading, then I see skeleton cards (warm cream rectangles, pulsing) — not a spinner
-- Given no posts exist yet, then I see an illustration with: "Your child's first update will appear here soon. Teachers usually post after morning circle." — no CTA
-- Given there are no posts today but prior posts exist, then recent posts are shown with a "No updates today yet — check back after morning circle!" section header
-- Given the network fails, then I see: "Couldn't load — check your connection." with a Retry button. Previously loaded content remains visible (stale-while-revalidate)
-- Given I scroll to the bottom of the feed, then the next page loads automatically (cursor-based pagination)
+- Given I open the parent app, then the top of the Home Feed shows a daily summary card for today's date before the list of posts.
+- Given at least one post exists today where my child is tagged, then the daily summary card shows an emotional heading such as "Here’s what [child name] did today" plus a brief summary (e.g., number of moments shared, any milestones observed today).
+- Given no posts exist yet today, then the daily summary card sets expectations positively (e.g., "Today’s update will appear after morning circle.") and does not show an empty feed as an error state.
+- Given I scroll the Home Feed, then the structure is: (1) daily summary card, followed by (2) posts where my child is tagged, grouped by day in reverse chronological order.
+- Given a post exists where my child is not tagged but the class posted, then that post is NOT shown in my personal feed.
+- Given the feed is loading, then I see skeleton cards (warm cream rectangles, pulsing) for both the summary card and posts — not a spinner.
+- Given I see a post card, then a subtle prompt (e.g., "React to let the teacher know you saw this") appears next to the ❤️ reaction to encourage engagement.
+- Given I have reacted to or commented on all posts for today, then the daily summary card reflects this with a "You’re all caught up for today" message.
+- Given the network fails, then I see: "Couldn't load — check your connection." with a Retry button, and the last known daily summary and posts remain visible (stale-while-revalidate).
+- Given I scroll to the bottom of the feed, then the next page of older posts loads automatically (cursor-based pagination).
+- Given my child's class has posted in the last 7 days but there are no posts where my child is tagged in that period, then the Home Feed shows a gentle empty state for this week (e.g., "This week has been quiet so far" and a smaller line such as "If you're expecting updates, you can check with your school.") instead of a hard error.
+- Given I tap a "Check with your school" CTA from that empty state, then the app opens the platform's default mail/SMS/WhatsApp chooser prefilled with the school's contact details, so I can easily reach out without the product taking a strong stance on the channel.
 
 ---
 
@@ -451,6 +1069,10 @@ Acceptance Criteria:
 - Given I want to comment, then I can type a comment that is visible to the teacher in the Post Detail view
 - Given a teacher sees a parent's comment, then they receive an in-app notification
 - Given the teacher's post had an AI-drafted caption that was not edited, then there is no visible indication that AI wrote it — it appears as the teacher's own words
+ - Given I react to or comment on today's posts from the Post Detail screen, then the Parent Home Feed daily summary card updates to reflect that I have engaged with today’s updates (e.g., shows a checkmark and "You’ve reacted to today’s update").
+ - Given I notice that a post appears to show the wrong child or tags, then I can tap a clear but non-threatening control (e.g., "Report incorrect tagging") on the Post Detail screen.
+ - Given I tap "Report incorrect tagging", then I see a simple confirmation dialog/sheet explaining that the issue will be shared with the school admin, with an optional text field and a primary "Send report" action.
+ - Given I submit a tagging report, then the system records a structured `post_reports` event (post_id, parent_id, reason_text, type = INCORRECT_TAGGING) and shows a brief confirmation to the parent (e.g., "Thanks, we've shared this with the school.").
 
 ---
 
@@ -462,6 +1084,7 @@ Acceptance Criteria:
 - Given a milestone has been teacher-confirmed on a post, then it shows as achieved with the date
 - Given no milestones have been logged yet, then I see: "Milestones will appear here as teachers observe them in class." — no CTA, educational tone
 - Given I tap a milestone, then I see the posts where that milestone was observed (photo + caption)
+ - Given a new milestone is observed today, then it can surface as a highlight in the Parent Home Feed daily summary card (e.g., "New milestone observed today in [domain]").
 
 ---
 
@@ -475,6 +1098,29 @@ Acceptance Criteria:
 - Given I tap the notification, then I see a full-screen portfolio preview in the app
 - Given I want to save the portfolio, then I can download it as a PDF
 - Given a child has fewer than 5 posts in the year, then the portfolio is still generated with available content — no minimum threshold blocks generation
+ - Given a new section of the portfolio becomes available (e.g., after year-end generation), then the Parent Home Feed daily summary card can surface this as an insight (e.g., "[Child name]’s year-end portfolio is ready to view").
+
+---
+
+**Story 4.5: Fees & Payments Visibility in Parent Experience (NEW)**
+As a parent, I want fees and payments to be visible alongside my child's updates so that I don't have to juggle multiple tools to stay on top of school payments.
+
+Acceptance Criteria:
+- Given I am using the Parent app, then there is a simple, consistent entry point (e.g., "Fees" tab or card under Profile / Home) that lets me see pending and paid invoices for my child, reusing the same underlying fee data model as the Admin dashboard.
+- Given an invoice is created or updated for my child, then I can see its status (Pending / Paid / Overdue), due date, and amount within the app, without needing to contact the school.
+- Given online payments (UPI) are enabled for my school, then each pending invoice clearly shows a "Pay now" CTA that opens a UPI-compatible flow; after a successful payment, the invoice status updates to Paid within a reasonable time.
+- Given an invoice becomes overdue, then I receive a gentle in-app notification and/or feed-level banner (per notification rules) reminding me to pay, without spamming or blocking access to my child's feed.
+
+---
+
+**Story 4.6: Incident Notifications and Child Documents (NEW)**
+As a parent, I want to be notified about important incidents and have access to key documents so that I feel informed and reassured about my child's safety and records.
+
+Acceptance Criteria:
+- Given a teacher or admin logs an incident for my child with "notify parents" enabled, then I receive a clear, sensitive notification in the app (and optionally via WhatsApp/SMS per configuration) indicating that an incident occurred today, with a tap-through to a secure incident detail view.
+- Given I open an incident detail, then I can see: date/time, high-level type (e.g., minor injury, behaviour), a brief description written by the school, and any relevant follow-up notes; incident details are **never** mixed into the public photo feed but are accessible from a dedicated "Incidents" section under my child's profile.
+- Given the school uploads important child documents (e.g., birth certificate, ID proof, medical certificates) to my child's record, then I can view a list of available documents from a "Documents" section under my child's profile and securely view/download them where appropriate.
+- Given no incidents or documents exist yet, then the respective sections show a gentle empty state explaining that incidents/documents will appear here when added, without suggesting that something is missing.
 
 ---
 
@@ -506,6 +1152,17 @@ Acceptance Criteria:
 - Given I click on a class-date cell, then I see the individual child attendance for that day
 - Given attendance has not been submitted for a class today, then the cell shows "Not submitted" in grey
 - Given I need to export attendance, then I can export a CSV for any date range
+
+---
+
+**Story 5.3: Attendance Insight (Admin)**
+As a school admin, I want to see attendance trends and low-attendance alerts so that I can intervene early.
+
+Acceptance Criteria:
+- Given I open the Attendance section or Dashboard, then I can see school-level and class-level attendance trends over a selectable period (e.g., 7 and 30 days), highlighting classes with declining attendance.
+- Given a class’s average attendance drops below a defined threshold (e.g., < 60% over the last 7 school days), then it appears in a "Low attendance" alert list for admins.
+- Given an individual child has been absent for several consecutive days (configurable, e.g., ≥3), then an alert is generated so the admin can follow up with the family.
+- Given I click any low-attendance alert, then I am taken to the relevant class-day or child-level detail view with attendance history pre-filtered.
 
 ---
 
@@ -549,8 +1206,21 @@ Acceptance Criteria:
 
 ---
 
-### Epic 7: Admin Dashboard & Engagement Score
-**Goal:** Give principals a single-screen morning check that tells them if their schools are healthy.
+**Story 6.4: Parent Fee Visibility**
+As a parent, I want to see my child’s pending school fees and reminders in the app so that I can stay on top of payments.
+
+Acceptance Criteria:
+- Given I am a parent with an active child profile, then I can access a "Fees" view or card from my app (e.g., via Profile or a Fees tab) showing my child’s invoices.
+- Given an invoice exists for my child, then I can see: fee type, amount, due date, and status (Pending / Paid / Overdue).
+- Given an invoice is overdue, then it is clearly labeled as Overdue and appears at the top of my fee list with a gentle reminder message.
+- Given I have no pending or overdue invoices, then the Fees view shows a positive reinforcement state (e.g., "All caught up — no pending fees for [child name].").
+- Given the school has provided payment instructions (e.g., UPI, bank transfer), then each pending invoice includes a "How to pay" section or link.
+- Given a payment is marked as Paid by the school, then the status in my parent app updates within a reasonable time (e.g., within 1 hour) without requiring reinstall or re-login.
+
+---
+
+### Epic 7: Admin Dashboard & Engagement Score (REWRITTEN)
+**Goal:** Enable admins to identify issues and act within seconds from a single dashboard view.
 **Priority:** P0
 **Timeline:** Month 5-6 (engagement score) + Month 7-8 (ERP tiles)
 
@@ -581,6 +1251,36 @@ Acceptance Criteria:
 
 ---
 
+**Story 7.7: Fee Lifecycle & Revenue Overview (NEW)**
+As a school admin, I want a clear view of fee plans, collections, and overdue amounts so that I can manage revenue without deep spreadsheets.
+
+Acceptance Criteria:
+- Given I open the Admin dashboard, then in addition to the core engagement hero and tiles, there is a concise fee/revenue summary widget or tile that shows: total invoiced this period, total collected, and total overdue, with a quick visual indicator if overdue exceeds a threshold.
+- Given I tap the fee/revenue summary, then I am taken to a fees dashboard or filtered Fee Management view where I can drill down by class, fee plan, and time range to see which families are overdue and by how much.
+- Given new invoices are created or payments recorded, then the dashboard-level fee KPIs update on the next refresh or within a defined polling window so I can rely on them during daily checks.
+
+---
+
+**Story 7.8: Admissions Funnel Overview (NEW)**
+As a school admin, I want to see my admissions pipeline at a glance on the dashboard so that I know if future enrollments are on track.
+
+Acceptance Criteria:
+- Given I open the Admin dashboard, then an admissions funnel widget is visible, summarising counts at each stage (e.g., New Inquiry, Tour Scheduled, Seat Offered, Enrolled, Not Joining) for the current and upcoming academic terms.
+- Given I tap any stage in the admissions funnel, then I am taken to the Admissions CRM view (Epic 15) pre-filtered to that stage and term, so I can follow up with specific leads.
+- Given there is a sudden drop-off between stages (e.g., many tours but few seats offered), then the funnel widget can surface a subtle alert or highlight, and this pattern can also feed into Admin Intelligence (Epic 13) for more detailed insights.
+
+---
+
+**Story 7.9: Staff Overview Snapshot (NEW)**
+As a school admin, I want a high-level staff overview on the dashboard so that I can understand staff coverage and potential issues quickly.
+
+Acceptance Criteria:
+- Given I open the Admin dashboard, then a staff snapshot tile is visible, showing: total active staff, staff per center/class, and any key alerts (e.g., unassigned classes, staff with missing profiles) sourced from the Staff Management module (Epic 17).
+- Given staff attendance and leave tracking is enabled, then the staff snapshot can also show today's presence overview (e.g., "3 staff on leave today"), with a CTA that deep-links into the staff attendance/leave view.
+- Given I tap the staff snapshot tile, then I am taken to the Staff Management view where I can see staff profiles, assignments, and relevant filters.
+
+---
+
 **Story 7.3: Class Breakdown Table**
 As a school admin, I want to see engagement ranked by class so that I can identify and act on low-activity classes.
 
@@ -603,14 +1303,232 @@ Acceptance Criteria:
 
 ---
 
-### Epic 8: Admissions Management
+**Story 7.5: Alerts Panel**
+As a school admin, I want a single alerts panel that surfaces the most important issues (engagement, fees, attendance) so that I know where to act first.
+
+Acceptance Criteria:
+- Given I open the Dashboard Home (A-1), then an Alerts panel appears at the top of the screen, above the engagement hero and tiles.
+- Given there are issues detected by the system, then alerts are grouped by type (e.g., Low engagement, Fee issues, Attendance issues) with a short description and severity indicator.
+- Given a "Low engagement" alert exists, then it clearly states the affected classes or segments (e.g., "3 classes have engagement < 30% this week").
+- Given a "Fee issues" alert exists, then it summarizes the number of overdue invoices and total overdue amount.
+- Given an "Attendance issues" alert exists, then it highlights classes with low attendance or missing submissions (e.g., "Attendance not submitted for 2 classes today").
+- Given any alert is shown, then it includes a clear CTA button or link (e.g., "View class", "Go to Fees", "View attendance") that deep-links to the relevant detailed screen with filters applied.
+ - Given a "Low engagement" alert exists and I tap its CTA, then I am taken to the engagement drilldown or Class Breakdown view pre-filtered to only the affected classes, with those rows scrolled into view so I can immediately see which teachers/classes need attention.
+ - Given a "No posts today"-type alert exists (e.g., "3 classes haven't posted today"), then tapping its CTA opens a pre-filtered Posts/Classes view listing only classes with zero posts today, including teacher names and a per-row quick action (e.g., "Message teacher") so I can prompt them to post.
+
+---
+
+**Story 7.6: Engagement Drilldown**
+As a school admin, I want to drill down into engagement to see inactive parents and class-level insights so that I can take targeted action.
+
+Acceptance Criteria:
+- Given I am on the Dashboard Home and tap the engagement score hero or a class row in the Class Breakdown table, then I can open an engagement drilldown view.
+- Given the drilldown view loads, then I can filter by class and time range (e.g., this week, last week) and see engagement by class and segment.
+- Given I select a class, then I see a list of parents for that class with indicators such as "Active this week" vs. "Inactive this week" based on view activity.
+- Given I view a list of inactive parents, then I can export the list or trigger a follow-up (e.g., via pre-filled WhatsApp message or email template) to encourage re-engagement.
+- Given I return to the Dashboard, then the engagement score and Alerts panel reflect the latest drilldown data on the next refresh cycle — there is no separate recalculation path.
+
+---
+
+---
+### Epic 8: Communication Layer (NEW)
+**Goal:** Provide a structured communication layer so important messages move out of ad-hoc WhatsApp and into CadenceSprout.
+
+Scope (Phase 2/expansion):
+- Teacher announcements to all parents in a class or group.
+- 1:1 parent–teacher messaging tied to a child.
+- Admin broadcasts to all parents or staff across one or more centers.
+
+**Modes**
+
+1. **Announcements**
+  - One-to-many (teacher → class).
+  - No replies OR limited emoji reactions.
+  - High visibility for important updates.
+2. **1:1 Chat (Phase 2)**
+  - Parent ↔ Teacher.
+  - Threaded messages with read receipts.
+3. **Admin Broadcast**
+  - Admin → all parents or staff.
+  - Priority messages (closures, urgent alerts).
+
+**Guardrails**
+
+- No spam:
+  - Teachers limited to a configurable number of announcements per day.
+- Clear separation of surfaces:
+  - Feed = memories and stories.
+  - Communication = actions, logistics, and coordination.
+
+---
+
+**Story 8.1: Class Announcements (Teacher → Parents)**
+As a teacher, I want to send a one-way announcement to all parents in my class so that important updates are not lost in the feed or WhatsApp.
+
+Acceptance Criteria:
+- Given I am on the Teacher app, when I tap "New Announcement" from the Communication tab or FAB, then I can select my class (pre-filled in most cases) and compose a short text message (max 500 characters).
+- Given I send an announcement, then all parents linked to that class receive a notification tagged as "Announcement" and see the message in a dedicated Announcements view (not mixed into the photo feed).
+- Given announcements are one-way in Phase 2, then parents can react with emojis (👍 ❤️ 🙏) but cannot reply with text in the same thread.
+- Given a teacher attempts to send more than the configured daily limit of announcements, then the app shows a friendly error: "You've reached today's announcement limit. Please combine non-urgent updates."
+
+---
+
+**Story 8.2: Announcements Inbox for Parents**
+As a parent, I want a clear inbox of school/teacher announcements so that I can quickly catch up on important information.
+
+Acceptance Criteria:
+- Given I open the Parent app, then there is a Communication / Announcements tab separate from the photo feed.
+- Given I have unread announcements, then the tab shows a badge with the count of unread items.
+- Given I open the Announcements tab, then announcements are listed with: title (first line), sender (Teacher name or School name), timestamp, and a small "Important" icon for high-priority messages.
+- Given I tap an announcement, then I can read the full text and see any attached links or documents.
+- Given I mark an announcement as read by opening it, then it no longer counts toward the unread badge.
+
+---
+
+**Story 8.3: 1:1 Parent–Teacher Chat (Phase 2)**
+As a parent, I want to message my child's teacher directly from CadenceSprout so that I don't have to juggle WhatsApp threads for school communication.
+
+Acceptance Criteria:
+- Given 1:1 chat is enabled for my school, then from a post or from my child's profile I can tap "Message Teacher" to open a chat thread with that teacher.
+- Given I open a 1:1 chat, then I see message bubbles with sender labels ("You" vs. teacher name), timestamps, and read indicators (single tick = sent, double tick = read).
+- Given I send a message, then the teacher receives a notification with the child's name and a snippet of the message.
+- Given chat is disabled for a school or temporarily turned off, then the UI shows a clear state: "Direct messaging is currently managed via your school. Please contact the office for urgent issues."
+
+---
+
+**Story 8.4: Admin Broadcasts to All Parents or Staff**
+As a school admin, I want to send broadcast messages to all parents or all staff so that I can communicate closures and important policies in one step.
+
+Acceptance Criteria:
+- Given I am on the Admin dashboard, when I navigate to Communication → Broadcast, then I can choose my audience: All Parents, All Staff, or specific classes.
+- Given I compose a broadcast and send it, then it appears as an announcement in the Parent or Teacher apps (depending on audience) and is marked with the school name as sender.
+- Given a broadcast is marked as "Urgent" by the admin, then parents receive both an in-app notification and a WhatsApp/SMS fallback (subject to notification system rules and consent).
+- Given a broadcast is sent, then an entry is stored in a "Broadcast log" with timestamp, sender, audience, and delivery counts (delivered/failed).
+
+---
+
+### Epic 9: Search & Retrieval (NEW)
+**Goal:** Make it easy to quickly find the right child, parent, teacher, or post across the system.
+
+Scope (Phase 2/expansion):
+- Parent search (e.g., find a parent by name or phone number from admin dashboard).
+- Teacher search (e.g., find a teacher by name or class).
+- Basic content search for posts by child name or date range.
+
+---
+
+**Story 9.1: Global Search on Admin Dashboard**
+As a school admin, I want a single search box on the dashboard to quickly find any parent, child, teacher, or class so that I don't have to navigate multiple menus.
+
+Acceptance Criteria:
+- Given I am on the Admin dashboard, then a global search box is visible in the top navigation bar.
+- Given I type at least 3 characters, then search suggestions appear grouped by entity type (Parents, Children, Teachers, Classes) with labels like "Meera (Parent)" or "Nursery A (Class)".
+- Given I select a suggestion, then I am taken directly to the relevant detail view (Parent profile, Child profile, Teacher profile, or Class view).
+- Given I search for something I am not allowed to see (e.g., another school's data), then no results are returned — search is always scoped by `school_id`.
+
+---
+
+**Story 9.2: Parent Search from Admissions and Fees**
+As a school admin, I want to search for a parent by name or phone number from Admissions and Fee Management so that I can quickly locate their records.
+
+Acceptance Criteria:
+- Given I am on the Admissions or Fee Management screen, then a contextual search box is available at the top.
+- Given I enter a parent's name or phone number, then matching parents are listed with child name, class, and status (e.g., Active, Inquiry).
+- Given I tap a parent in the search results, then I see a combined view of their child(ren), fee invoices, and admissions history.
+
+---
+
+**Story 9.3: Content Search for Posts by Child and Date**
+As a parent or teacher, I want to search posts by child name and date range so that I can quickly find specific memories or evidence.
+
+Acceptance Criteria:
+- Given I am on the Parent or Teacher feed, when I tap the search icon, then I can filter posts by child (chip selector) and date range (from/to).
+- Given I apply a filter, then only posts matching that child and date range appear in the feed.
+- Given no posts are found, then an empty state appears: "No posts found for this child and date range. Try adjusting your filters."
+
+---
+
+**Story 9.4: Search Performance and Safeguards (Engineering)**
+As the engineering team, I want search to be fast and respect permissions so that it doesn't introduce latency or privacy issues.
+
+Acceptance Criteria:
+- Given typical school sizes (up to 50 staff and 500 parents), then search response time must be < 500ms for 95% of requests.
+- Given search is implemented, then all queries are scoped by `school_id` via database or query builder (no client-side filtering to enforce tenancy).
+- Given role-based permissions, then parents only see their own child(ren) and related posts in search; teachers see only their classes; admins see the entire school.
+
+---
+
+### Epic 10: AI Intelligence Layer (EXPANDED)
+**Goal:** Use AI to summarize activity, nudge behavior, and surface insights for teachers, parents, and admins.
+
+Scope (Phase 2/expansion):
+- Daily summary generation for parents (used in Parent Home Feed summary card).
+- Teacher nudges (e.g., reminders to post, suggestions on what to share).
+- Parent insights (e.g., patterns in engagement, milestone highlights over time).
+
+---
+
+**Story 10.1: Daily Parent Summary Generation**
+As a parent, I want a daily summary of my child's activity so that I can understand the day at a glance without scrolling through every post.
+
+Acceptance Criteria:
+- Given the daily summary job runs once per day (evening, local time), then it aggregates that day’s posts and key events per child into a short summary string and highlight bullets.
+- Given a summary exists for today, then the Parent Home Feed shows a summary card at the top with: "Today at school" title, 1–3 bullet highlights, and a CTA to "View all posts".
+- Given there were no posts for my child today, then the summary card is either hidden or shows a gentle state like "No updates today — check back tomorrow." (configurable per product decision).
+- Given AI summary generation fails, then the app falls back to a simple rule-based summary (e.g., "2 posts today" with thumbnails) without blocking the feed.
+
+---
+
+**Story 10.2: Teacher Posting Nudges**
+As a teacher, I want timely nudges to post when I haven't shared anything today so that I stay on track with the expected posting cadence.
+
+Acceptance Criteria:
+- Given it is 12 PM local time and I have not posted for my class today, then I receive a non-intrusive push notification: "Share one moment from your morning? Parents are waiting 👀" (exact copy to be finalized with Design).
+- Given I tap the nudge notification, then I am taken directly into the post composer with my class pre-selected.
+- Given I post after receiving a nudge, then no further "post today" nudges are sent that day.
+- Given I repeatedly ignore nudges for 3 consecutive days, then the system reduces nudge frequency (e.g., to every other day) and flags this in the Admin dashboard as a potential low-engagement teacher.
+
+---
+
+**Story 10.3: Parent Engagement Insights**
+As a parent, I want simple insights about my child's engagement and milestones so that I feel reassured about their development.
+
+Acceptance Criteria:
+- Given my child has accumulated posts with milestone tags, then the Parent app can show a "Highlights" view summarizing recent milestones (e.g., "Rohan has shown 3 new language milestones in the last 30 days").
+- Given there is enough data, then the insights view shows simple trends (e.g., "Most active on Mon/Wed" or "Lots of storytime photos this month").
+- Given there is insufficient data, then the insights view shows an encouraging message instead of blank charts.
+
+---
+
+**Story 10.4: Admin Intelligence Snapshot**
+As a school admin, I want AI-curated insights about engagement, attendance, and fees so that I can spot patterns without deep analysis.
+
+Acceptance Criteria:
+- Given the weekly intelligence job runs, then it produces 3–5 bullet insights per school (e.g., "Nursery A has the highest parent engagement", "Overdue fees increased 15% vs. last month").
+- Given I open the Admin dashboard on Monday, then a "This week’s insights" panel appears below the main tiles with those bullets.
+- Given an insight references a metric, then the metric is linkable to a relevant detail view (e.g., clicking an engagement insight opens the engagement drilldown filtered to that class).
+
+---
+
+**Story 10.5: Child Skill Insight Banner for Teachers (NEW)**
+As a teacher, I want simple AI-generated insights about a child's emerging skills so that I know what to observe and document next.
+
+Acceptance Criteria:
+- Given a child has accumulated enough tagged posts and milestones (e.g., ≥ 5 posts with milestone tags or consistent themes), then the Milestone Tracker view (T-6) may show an optional AI insight banner at the top (e.g., "Based on recent posts, Rohan may be developing: • Spatial reasoning • Fine motor skills").
+- Given the AI insight banner is shown, then it is clearly labeled as an AI suggestion (e.g., "AI insight") and uses warm, non-clinical language that avoids any diagnosis; it frames suggestions as possibilities, not facts.
+- Given I tap the AI insight banner, then the milestone list scrolls or highlights to the relevant domain(s) and suggested milestones so I can review and confirm or add observations.
+- Given AI insight generation fails or there is insufficient data, then no banner is shown and the Milestone Tracker behaves as a normal manual view — the absence of a banner is not presented as an error.
+
+---
+
+### Epic 11: Admissions Management
 **Goal:** Enable schools to track inquiries through to enrollment, replacing paper registers and WhatsApp-based admission tracking.
 **Priority:** P1 (important for ERP completeness; not the first thing schools care about)
 **Timeline:** Month 7-8
 
 ---
 
-**Story 8.1: Admissions Inquiry Capture**
+**Story 11.1: Admissions Inquiry Capture**
 As a school admin, I want to record a new inquiry so that I don't lose track of prospective parents.
 
 Acceptance Criteria:
@@ -620,7 +1538,7 @@ Acceptance Criteria:
 
 ---
 
-**Story 8.2: Admissions Pipeline Stages**
+**Story 11.2: Admissions Pipeline Stages**
 As a school admin, I want to move inquiries through stages so that I know where each prospective child is in the process.
 
 Acceptance Criteria:
@@ -631,7 +1549,7 @@ Acceptance Criteria:
 
 ---
 
-**Story 8.3: Enrollment to Child Profile**
+**Story 11.3: Enrollment to Child Profile**
 As a school admin, I want to convert an admitted inquiry into a full child profile so that I don't have to re-enter the data.
 
 Acceptance Criteria:
@@ -641,9 +1559,358 @@ Acceptance Criteria:
 
 ---
 
+### Epic 12: Parent Engagement System (NEW)
+**Goal:** Build a holistic parent engagement system beyond the core feed so that parents stay informed and emotionally connected.
+
+Scope (Phase 2/expansion):
+- Daily digest of posts and key events (e.g., via app notification or summary view).
+- Ability for parents to save or download favorite posts and memories.
+- Smooth multi-child support for parents with more than one enrolled child.
+
+---
+
+**Story 12.1: Daily Digest View in Parent App**
+As a parent, I want a daily digest view so that I can see the most important updates about my child in one place.
+
+Acceptance Criteria:
+- Given the daily digest is generated, then the Parent app offers a "Today" tab or section summarizing today’s posts, milestones, and announcements for my child(ren).
+- Given I open the digest, then I see: number of posts, key milestones (if any), and any unread announcements for the day.
+- Given I have more than one child, then the digest clearly separates content per child (e.g., tabs or labeled sections).
+
+---
+
+**Story 12.2: Save / Favorite Posts**
+As a parent, I want to save favorite posts so that I can easily find and revisit my favourite memories.
+
+Acceptance Criteria:
+- Given I am viewing a post, then I can tap a "Save" or "Bookmark" icon to add it to my favorites.
+- Given I have saved posts, then a "Saved" section is available in the Parent app where all favorited posts appear chronologically.
+- Given I un-save a post, then it is removed from the Saved list but remains in the main feed.
+
+---
+
+**Story 12.3: Year-End Portfolio Download and Sharing**
+As a parent, I want to download or share my child's year-end portfolio so that I can keep and share a record of their preschool journey.
+
+Acceptance Criteria:
+- Given the AI portfolio generation job has completed, then the Parent app shows a "Download portfolio" CTA on the child's profile.
+- Given I tap "Download portfolio", then I receive a PDF file with curated posts, milestones, and summary text.
+- Given I choose to share the portfolio, then I can use my device share sheet to send a link or file, which includes subtle "Powered by CadenceSprout" branding.
+
+---
+
+**Story 12.4: Multi-Child Support**
+As a parent with more than one enrolled child, I want to switch between children easily so that I can keep track of each child's updates.
+
+Acceptance Criteria:
+- Given I have multiple children enrolled, then the Parent app clearly shows which child I am currently viewing (name + avatar) and lets me switch via a simple selector.
+- Given I switch children, then the feed, digest, and saved posts all update to show content for the selected child.
+- Given I only have one child enrolled, then no confusing child-switcher UI is shown.
+
+---
+
+### Epic 13: Admin Alerts & Intelligence (NEW)
+**Goal:** Give admins proactive intelligence and alerts so they can manage by exception instead of micromanaging.
+
+Scope (Phase 2/expansion):
+- Engagement alerts (e.g., classes or parents with low engagement over time).
+- Fee alerts (e.g., rising overdue balance, classes with high unpaid ratios).
+- Attendance alerts (e.g., low attendance trends, frequent absentees).
+
+---
+
+**Story 13.1: Configurable Alert Rules**
+As a school admin, I want to configure basic alert rules for engagement, fees, and attendance so that the system notifies me about what matters most.
+
+Acceptance Criteria:
+- Given I open the Admin dashboard settings, then there is an "Alerts" configuration section with default thresholds for engagement, overdue fees, and attendance.
+- Given I adjust a threshold (e.g., engagement < 40%), then future alerts use the new value while past alerts remain unchanged.
+- Given no configuration changes are made, then sensible defaults (defined in product) are applied.
+
+---
+
+**Story 13.2: Engagement Alert Feed**
+As a school admin, I want a feed of engagement-related alerts so that I can see patterns and take action.
+
+Acceptance Criteria:
+- Given a class or segment fails the engagement threshold for 2 consecutive weeks, then an engagement alert is generated and added to the Alerts feed with class name, score, and trend.
+- Given I open an engagement alert, then I can jump directly to the engagement drilldown view for that class.
+- Given I mark an alert as resolved, then it is archived but still visible in history for future reference.
+
+---
+
+**Story 13.3: Fee and Attendance Intelligence Alerts**
+As a school admin, I want alerts for worrying fee and attendance patterns so that I can intervene early.
+
+Acceptance Criteria:
+- Given overdue fees exceed a configurable percentage of total billed amount (e.g., > 20%), then a "Fee risk" alert is created with the amount, number of affected families, and suggested next steps.
+- Given a class has unusually low attendance for 3 consecutive days, then an "Attendance risk" alert is created with class name and attendance trend.
+- Given I click a fee alert, then I am taken to the Fee Management view filtered to overdue invoices; given I click an attendance alert, then I am taken to the attendance view filtered to the affected class and dates.
+
+---
+
+**Story 13.4: Alert Delivery Channels**
+As a school admin, I want critical alerts delivered via multiple channels so that I don’t miss urgent issues.
+
+Acceptance Criteria:
+- Given an alert is marked as "Critical" by the rules engine (e.g., engagement collapse, large overdue spike), then I receive both an in-app dashboard alert and an email/WhatsApp notification (subject to notification system rules and DPDP consent).
+- Given an alert is informational only, then it appears in the Alerts panel but does not trigger external notifications.
+- Given I disable external notifications for alerts in settings, then only in-app alerts are shown.
+
+---
+
+### Epic 14: Fees & Payments (NEW)
+**Goal:** Enable complete fee lifecycle from plan setup to collection and alerts.
+
+Scope (Phase 1/expansion blend):
+- Fee plan setup per class/term.
+- Invoice generation (single and bulk).
+- Online payments (UPI) integration.
+- Payment tracking and overdue alerts.
+
+---
+
+**Story 14.1: Fee Plan Setup**
+As a school admin, I want to define fee plans so that invoices can be generated consistently for each class and term.
+
+Acceptance Criteria:
+- Given I navigate to the Fees & Payments configuration area, then I can create fee plans with: name (e.g., "Nursery 2026–27 Tuition"), amount, billing frequency (monthly/termly), due dates, and applicable classes.
+- Given a fee plan is created, then it can be attached to one or more classes so that invoices can be generated in bulk for enrolled children.
+- Given I update a fee plan, then future invoices use the new configuration while previously generated invoices remain unchanged for auditability.
+
+---
+
+**Story 14.2: Invoice Generation & Bulk Invoicing**
+As a school admin, I want to generate invoices (individually or in bulk) so that parents know what to pay and when.
+
+Acceptance Criteria:
+- Given a fee plan exists, then I can generate invoices in bulk for all children in the associated class(es) for a given billing period with a single action.
+- Given I need to create or adjust an invoice for a specific child, then I can create/edit a single invoice with custom amount, due date, and notes without affecting the underlying fee plan.
+- Given invoices are generated, then each invoice has a unique identifier, child/parent linkage, status (Pending / Paid / Overdue), due date, and optional notes visible to parents.
+
+---
+
+**Story 14.3: Online Payments (UPI) Integration**
+As a parent, I want to pay school fees online via UPI so that I can complete payments quickly from my phone.
+
+Acceptance Criteria:
+- Given my school has enabled online payments and configured their UPI/payment provider, then each pending invoice in the Parent app shows a "Pay now" CTA that launches a UPI-compatible flow with the correct amount, invoice reference, and payee details.
+- Given a payment is successful, then the payment provider notifies CadenceSprout via webhook/callback and the invoice status is updated to Paid, with payment method and transaction reference stored.
+- Given a payment fails or is cancelled, then the invoice remains Pending and I see a clear, non-technical message in the app encouraging me to retry or contact the school if needed.
+
+---
+
+**Story 14.4: Payment Tracking & Alerts**
+As a school admin, I want clear visibility into paid, pending, and overdue invoices so that I can follow up efficiently.
+
+Acceptance Criteria:
+- Given I open the Fees & Payments dashboard, then I can filter invoices by status (Pending / Paid / Overdue), class, and date range, and see aggregated totals per segment.
+- Given an invoice passes its due date without payment, then it automatically moves to Overdue and contributes to overdue totals and fee alerts in the Admin dashboard and Admin Alerts epics.
+- Given overdue invoices exceed a configured threshold (e.g., > 20% of total billed in a period), then a fee alert is generated (per Epics 7 and 13) with a CTA to view the list of overdue families.
+
+---
+
+### Epic 15: Admissions CRM (NEW)
+**Goal:** Convert inquiries into enrollments with a simple, visual pipeline.
+
+Scope:
+- Lead capture.
+- Pipeline tracking (Kanban-style stages).
+- Follow-ups and tasks.
+- Conversion from lead to enrolled student.
+
+---
+
+**Story 15.1: Lead Capture**
+As a school admin, I want to quickly capture new inquiries so that I don't lose potential enrollments.
+
+Acceptance Criteria:
+- Given I navigate to the Admissions CRM, then I can add a new lead with: parent name, phone, child name, age, class of interest, source, and notes.
+- Given a lead is created, then it appears in the first stage of the admissions pipeline (e.g., New Inquiry) with a clear card showing key details and contact actions.
+
+---
+
+**Story 15.2: Pipeline Tracking (Kanban)**
+As a school admin, I want to move leads through pipeline stages so that I can see where each prospect stands.
+
+Acceptance Criteria:
+- Given I am viewing the admissions pipeline, then leads are displayed in Kanban columns by stage (e.g., New Inquiry → Tour Scheduled → Tour Done → Seat Offered → Enrolled → Not Joining).
+- Given I drag-and-drop or otherwise move a lead card between columns, then the lead's stage is updated and the change is logged with timestamp and user.
+- Given a lead remains in the same stage beyond a configurable number of days, then it is visually flagged (e.g., "Follow up?") to prompt action.
+
+---
+
+**Story 15.3: Follow-Ups & Tasks**
+As a school admin, I want to schedule and track follow-ups so that leads don't go cold.
+
+Acceptance Criteria:
+- Given I open a lead detail, then I can add follow-up tasks with due dates and notes (e.g., "Call parent on Friday"), and mark them as done.
+- Given a follow-up is due or overdue, then it appears in a simple task list view and may surface as an admin-level reminder or alert.
+
+---
+
+**Story 15.4: Conversion to Student**
+As a school admin, I want to convert a won lead into a child profile so that I don't have to re-enter data.
+
+Acceptance Criteria:
+- Given I move a lead to "Enrolled", then I am prompted to create a child profile using the existing lead details (child name, DOB, class), reusing the existing Admissions → Child Enrollment flows.
+- Given a child profile is created from a lead, then the lead is marked as Converted and linked to the child record for future reference.
+
+---
+
+### Epic 16: Child Records & Compliance (NEW)
+**Goal:** Maintain a complete, compliant record for each child.
+
+Scope:
+- Core child profile and documents.
+- Medical information.
+- Emergency contacts.
+- Incident reports.
+
+---
+
+**Story 16.1: Child Profile & Documents**
+As a school admin, I want to store key documents against each child's profile so that records are easily accessible and auditable.
+
+Acceptance Criteria:
+- Given I open a child's admin profile, then I can upload and manage documents (e.g., birth certificate, ID proof, medical certificates) with type labels and upload dates.
+- Given a document is uploaded, then it is stored securely (e.g., S3) and visible in both admin views and the parent-facing "Documents" section where appropriate.
+
+---
+
+**Story 16.2: Medical Info & Emergency Contacts**
+As a school admin, I want to record medical information and emergency contacts so that staff know how to respond in case of issues.
+
+Acceptance Criteria:
+- Given I edit a child's record, then I can capture key medical info (e.g., allergies, chronic conditions, medications) and at least two emergency contacts (name, relationship, phone).
+- Given medical information exists, then teachers see a concise, privacy-respecting summary in relevant contexts (e.g., a banner in Child Detail view) without exposing full details in the parent app.
+
+---
+
+**Story 16.3: Incident Reports**
+As a school admin, I want a structured incident log so that any important events (e.g., injuries, behavioural incidents) are recorded and auditable.
+
+Acceptance Criteria:
+- Given an incident is logged from the teacher app (inline with a post) or from the admin dashboard, then a structured incident record is created with: child(ren) involved, date/time, type, description, severity, and whether parents were notified.
+- Given I open the Incident log for a child or class, then I can filter by date range and incident type and see links back to the originating posts or notes.
+- Given an incident is marked as requiring parent notification, then its status reflects whether notifications were sent and acknowledged, and this status can feed into parent-facing incident views.
+
+---
+
+### Epic 17: Staff Management (NEW)
+**Goal:** Manage the staff lifecycle and ensure classes are properly staffed.
+
+Scope:
+- Staff profiles.
+- Assignments to classes/centers.
+- Attendance & leave (lite).
+- Role-based permissions.
+
+---
+
+**Story 17.1: Staff Profiles & Roles**
+As a school admin, I want to manage staff profiles so that I know who is working where and in what capacity.
+
+Acceptance Criteria:
+- Given I open Staff Management, then I can create and edit staff profiles with name, role (e.g., Teacher, Admin, Support), phone, email (optional), and center/class assignments.
+- Given a staff profile exists, then it appears in lists used elsewhere in the product (e.g., assigning a class teacher, messaging staff) with up-to-date role and assignment.
+
+---
+
+**Story 17.2: Staff Attendance & Leave (Lite)**
+As a school admin, I want a light-weight view of staff attendance and leave so that I can see staffing gaps.
+
+Acceptance Criteria:
+- Given staff attendance tracking is enabled, then I can record or import simple attendance/leave statuses (Present / Absent / On leave) for each staff member per day.
+- Given I open the staff attendance view, then I can see at-a-glance which staff are present, absent, or on leave today, and drill down into history for a given staff member.
+
+---
+
+**Story 17.3: Role-Based Permissions**
+As a system admin, I want to assign roles and permissions so that staff only see what they need.
+
+Acceptance Criteria:
+- Given I manage staff roles, then I can assign high-level permission profiles (e.g., Teacher, Admin, Owner) that map to capabilities across the app (e.g., can view fees, can edit child records, can view incidents).
+- Given a staff member's role is changed, then their access rights update accordingly on next login without affecting historical audit trails.
+
+---
+
+### Epic 18: Structured Learning (NEW)
+**Goal:** Add a light-weight structured learning layer on top of daily posts.
+
+Scope:
+- Lesson planning.
+- Daily reports.
+- Assignments (lite, age-appropriate).
+
+---
+
+**Story 18.1: Lesson Planning (Lite)**
+As a teacher, I want to plan simple lesson outlines so that I have a structured view of what to cover each day/week.
+
+Acceptance Criteria:
+- Given I open the Lesson Planning view, then I can add short plans per day or week with fields like theme, activities, and materials, linked to a class.
+- Given a plan exists for today, then it can subtly inform AI suggestions (e.g., caption hints or milestone suggestions) and be visible to admins in a read-only planning overview.
+
+---
+
+**Story 18.2: Daily Reports (Extended)**
+As a teacher/admin, I want to aggregate optional daily report fields into a structured view so that parents and admins can see a concise daily summary.
+
+Acceptance Criteria:
+- Given teachers optionally fill daily report fields in the post composer (Epic 3), then the system can generate a structured daily report per class and child (e.g., meals, naps, key activities) without additional manual work.
+- Given I open a Daily Reports view (admin or parent-facing, depending on role), then I can see the daily report for the most recent school days, with clear indication when a day has no report data.
+
+---
+
+**Story 18.3: Assignments (Lite)**
+As a teacher, I want to send occasional simple assignments or at-home activities so that parents can extend learning at home without complexity.
+
+Acceptance Criteria:
+- Given I create an assignment, then I can specify: title, short description, due date, and which class/children it applies to, and parents see it in a dedicated, non-noisy section (not mixed into the photo feed).
+- Given an assignment is created, then parents receive a notification and can mark it as done; completion can be surfaced lightly in admin/teacher views without strict grading.
+
 ## 4. Screen Inventory
 
 This section maps every screen in the product to its role, purpose, route, and key elements.
+
+At the **admin level**, note the following relationships between screens:
+- `A-1 Dashboard Home` surfaces high-signal alerts and tiles and then deep-links into the relevant OS module homes and tables.
+- `A-9 Fees & Payments Overview` is the **fees module home**; `A-4 Fee Management (List)` is the detailed invoice table behind it.
+- `A-10 Admissions Overview` is the **admissions module home**; `A-3 Admissions Pipeline` is the detailed Kanban board behind it.
+- `A-12 Staff Management Overview` is the **staff module home**; `A-6 Staff Management` is the detailed staff table behind it.
+- `A-11 Child Records` is the central compliance hub surfacing per-child documents, medical info, emergency contacts, and incidents.
+
+---
+
+### 4.0 Screen ID → Epics Map (NEW)
+
+Quick reference linking key screens to the epics and stories that define their behavior.
+
+| Persona / Surface      | Screen ID & Name                    | Primary Epic(s) / Stories                                 |
+|------------------------|--------------------------------------|-----------------------------------------------------------|
+| Teacher (mobile)       | **T-1 Home Feed**                   | Epic 3 – Stories 3.0, 3.6                                 |
+| Teacher (mobile)       | **T-2 / T-2A Post Composer**        | Epic 3 – Stories 3.1–3.5, 3.7; Epic 10 – AI caption/tagging |
+| Teacher (mobile)       | **T-5A Child Detail / Timeline**    | Epic 3 – Child overview & timeline                        |
+| Teacher (mobile)       | **T-6 Milestone Tracker**           | Epic 3 – Story 3.4; Epic 10 – Story 10.5 (AI insight banner) |
+| Teacher (mobile)       | **T-8 Daily Report Form**           | Epic 3 – Story 3.6; Epic 18 – Story 18.2 (Daily Reports)  |
+| Teacher (mobile)       | **T-9 Incident Report Form**        | Epic 3 – Story 3.8; Epic 16 – Story 16.3 (Incident Reports) |
+| Parent (mobile)        | **P-3 Parent Home Feed**            | Epic 4 – Stories 4.1–4.2; Epic 10 – Story 10.1 (daily summary) |
+| Parent (mobile)        | **P-5 Milestone Progress**          | Epic 4 – Story 4.3; Epic 10 – Story 10.3 (parent insights) |
+| Parent (mobile)        | **P-6 Year-End Portfolio**          | Epic 4 – Story 4.4; Epic 12 – Stories 12.2–12.3           |
+| Parent (mobile)        | **P-9 Fees & Payments**             | Epic 6 – Story 6.4; Epic 14 – Stories 14.3–14.4           |
+| Parent (mobile)        | **P-10 Documents & Records**        | Epic 16 – Story 16.1                                      |
+| Parent (mobile)        | **P-11 Incident History**           | Epic 4 – Story 4.6; Epic 16 – Story 16.3                  |
+| Admin Web              | **A-1 Dashboard Home**              | Epic 7 – Stories 7.1–7.6; Epic 13 – Stories 13.1–13.4     |
+| Admin Web              | **A-4 Fee Management (List)**       | Epic 6 – Stories 6.1–6.3; Epic 14 – Story 14.4 (drilldown from A-9) |
+| Admin Web              | **A-9 Fees & Payments Overview**    | Epic 14 – Stories 14.1–14.4; Epic 7 – Story 7.7 (module home → A-4) |
+| Admin Web              | **A-10 Admissions Pipeline Overview** | Epic 11 – Stories 11.1–11.3; Epic 15 – Stories 15.1–15.4; Epic 7 – Story 7.8 (module home → A-3) |
+| Admin Web              | **A-11 Child Records**              | Epic 16 – Stories 16.1–16.3                               |
+| Admin Web              | **A-12 Staff Management Overview**  | Epic 17 – Stories 17.1–17.3; Epic 7 – Story 7.9 (module home → A-6) |
+| Teacher Web            | **TW-2 Teacher Web Home Feed**      | Epic 3 – Teacher web feed equivalent; Epic 7 – engagement feedback context |
+| Parent Web             | **PW-2 Parent Web Full Feed**       | Epic 4 – Stories 4.1–4.2; Epic 10 – Story 10.1            |
+
+This table is not exhaustive; it highlights the most important Screen ↔ Epic connections so reviewers can quickly jump between UX and requirements.
 
 ---
 
@@ -675,25 +1942,26 @@ States:
 
 ---
 
-**Screen T-1: Home Feed (Class Feed)**
+**Screen T-1: Home Feed (REWRITTEN)**
 - Route: `/` (default tab)
 - Entry point: App launch, bottom nav tab 1
-- Purpose: Show all posts for the teacher's class; primary daily landing screen
+- Purpose: Drive daily posting behavior by showing status, posts, and engagement at a glance.
 
 Key elements:
-- School logo + class name in header
-- Post cards: full-bleed photo (4:3), caption in Fraunces font, child tag chips, time ago, parent view count
-- FAB (floating action button, sage green, bottom right) — always visible
+- Daily status header for today's date (e.g., "No update yet — share a moment" or "Today's update is live")
+- Post feed: full-bleed photo (4:3), caption in Fraunces font, child tag chips, time ago, parent view count, and % reach
+- Engagement indicators: "Viewed by X parents" and "% reach" on each post
+- FAB (floating action button, sage green, bottom right) — always visible; can pulse when no post exists yet for today
 - Bottom tab nav: Feed | Attendance | Roster | Profile
 
 States:
 | State | Trigger | What the teacher sees |
 |---|---|---|
-| Loading | App opens | Skeleton cards — warm cream pulsing rectangles |
-| Empty (new class, 0 students) | No children added yet | "Add your students to get started." + Add Students button |
-| No posts today | Class exists, posts exist but not today | Past posts visible, today's section header: "No posts yet today" |
-| Normal | Posts exist | Reverse-chronological post feed |
-| Offline | No network | Persistent top banner "You're offline — showing saved content" |
+| Loading | App opens | Skeleton daily status header + skeleton cards (warm cream pulsing rectangles) |
+| Empty (new class, 0 students) | No children added yet | Daily status header plus "Add your students to get started." + Add Students button |
+| No post today yet | Class exists, no post today | Daily status header with CTA to post; past posts visible under previous days |
+| Normal | At least one post today | Daily status header with positive reinforcement; today's posts shown first, then earlier days |
+| Offline | No network | Persistent top banner "You're offline — showing saved content"; last known daily status and posts cached |
 
 ---
 
@@ -813,10 +2081,10 @@ Key elements:
 
 ---
 
-**Screen T-5A: Child Detail**
+**Screen T-5A: Child Detail / Timeline View (UPDATED)**
 - Route: `/child/:id`
 - Entry point: Tap child row on T-5 Class Roster
-- Purpose: Give the teacher a single-child overview including profile, parent contact information, milestone summary, and recent posts
+- Purpose: Give the teacher a single-child overview including profile, parent contact information, milestone summary, and a unified timeline of this child's posts and milestone events.
 
 Key elements:
 - Child header:
@@ -836,47 +2104,51 @@ Key elements:
 - Milestone summary card:
   - Domain-wise progress snapshot
   - "View full milestone tracker" CTA → T-6
-- Recent posts section:
-  - Latest 3-5 posts where child is tagged
-  - Tap post → T-3
+- Child timeline section:
+  - Chronological timeline of this child's story across the year, combining posts and milestone events into a single list (most recent at top).
+  - Each timeline item shows: date, type badge (Post / Milestone / Post + Milestone), brief description (e.g., first line of caption or milestone name), and an indicator if a new domain has recently become active.
+  - Timeline items with media link to T-3 Post Detail; timeline items that are milestone-only link to the relevant section in T-6.
 
 States:
 | State | Trigger | What the teacher sees |
 |---|---|---|
 | Loading | Child detail opens | Skeleton header, parent rows, and post cards |
-| No recent posts | Child has not been tagged in any post yet | "No posts for this child yet." |
+| No timeline events | Child has no tagged posts and no logged milestones yet | "No moments recorded for this child yet. As you post and log milestones, they'll appear here." |
 | No parent linked | Child exists but parent record not added | "No parent contact added yet." + prompt to contact admin |
-| Normal | Child data available | Full profile + parent section + milestone summary + recent posts |
+| Normal | Child data available | Full profile + parent section + milestone summary + unified timeline of posts and milestones |
 
 Interactions & Behaviors:
 - Tapping View milestones deep-links into T-6 for the same child
 - WhatsApp action opens the default WhatsApp deep link with the parent's phone number pre-filled
-- Recent posts are sorted reverse-chronologically
+- Timeline items are sorted reverse-chronologically (most recent at top)
+- Tapping a timeline item that includes a post opens T-3 Post Detail at that post.
+- Tapping a timeline item that is milestone-only opens T-6 Milestone Tracker focused on that milestone/domain.
 
 Data Requirements:
 - Child profile: `child_id`, `name`, `dob`, `age`, `photo_url`, `class_name`
 - Parent links: `parent_id`, `name`, `relationship`, `phone`, `invite_status`
 - Milestone summary by domain
-- Recent tagged posts
+- Joined view of child's tagged posts and milestone events for timeline construction
 
 ---
 
 **Screen T-6: Milestone Tracker (per child)**
 - Route: `/child/:id/milestones`
 - Entry point: Tap child in Roster → Milestones tab
-- Purpose: View and add milestone observations for a specific child
+- Purpose: View and add milestone observations for a specific child, and (when available) see simple AI-generated insights about emerging skills.
 
 Key elements:
 - Domain tabs: Physical | Cognitive | Language | Social-Emotional | Aesthetic
 - Milestone list: milestone name, age range, achieved / not yet, date achieved
 - "Observed in post" link (taps through to the post where milestone was tagged)
 - Add milestone button (opens NEP 2020 taxonomy picker)
+ - Optional AI insight banner at the top (when sufficient data exists), labeled clearly as AI-generated (e.g., "AI insight") and summarising potential emerging skills/domains based on recent posts (e.g., "Based on recent posts, Rohan may be developing: • Spatial reasoning • Fine motor skills").
 
 States:
 | State | Trigger | What the teacher sees |
 |---|---|---|
 | No milestones logged | New child, no posts with tags | "Milestones will appear here as you observe them in class." |
-| Milestones present | Posts with milestone tags exist | Domain-grouped list with achieved milestones highlighted |
+| Milestones present | Posts with milestone tags exist | Domain-grouped list with achieved milestones highlighted; if enough data exists, a subtle AI insight banner appears above the list with suggested domains/skills and can be tapped to scroll/highlight relevant milestones. |
 
 ---
 
@@ -987,6 +2259,74 @@ Data Requirements:
 
 ---
 
+**Screen T-8: Daily Report Form**
+- Route: Modal or nested section from T-2 Post Composer; optionally accessible from T-1 header ("Daily report")
+- Entry point: Expand "Daily report (optional)" section from T-2, or tap a "Daily report" CTA on T-1
+- Purpose: Capture structured, optional daily report fields (meals, naps, key activities) without disrupting the core post flow
+
+Key elements:
+- Header: "Daily report for [Class name], [Date]"
+- Fields:
+  - Meal summary (dropdown + free-text notes)
+  - Nap summary (time range, quality, optional notes)
+  - Key activities (multi-select chips + optional free-text)
+- Optional per-child notes link (e.g., for specific children who need extra context)
+- [Save report] primary button; [Cancel] secondary action or close icon
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| Empty | First time opening today | Blank fields with short helper text explaining optional nature |
+| Partially filled | Draft exists for today | Previously entered values restored, with a subtle "Draft saved" indicator |
+| Saved | Save tapped | Confirmation toast (e.g., "Daily report saved"), then modal closes or stays with disabled Save until further edits |
+
+Interactions & Behaviors:
+- Saving the form writes a structured daily report object linked to the class (and optionally children) and the day; it can be reused in admin and parent daily report views.
+- The form never blocks posting: teachers can ignore it entirely and still post photos normally.
+- If opened from a specific post composer, saving the daily report associates it with that post's date but not necessarily only that post.
+
+Data Requirements:
+- Class identifier and date
+- Structured fields for meals, naps, and activities
+- Optional links to child IDs for per-child notes
+
+---
+
+**Screen T-9: Incident Report Form**
+- Route: Modal overlay from T-2 Post Composer, T-5A Child Detail, or admin-initiated incident logging
+- Entry point: Tap "Add incident" or expand the "Incident (optional)" section while creating a post or viewing a child
+- Purpose: Allow teachers to log structured incidents in context, feeding the Child Records & Compliance system without cluttering the main feed
+
+Key elements:
+- Header: "Incident report for [Child name]" (or [Class name] when multiple children involved)
+- Fields:
+  - Incident type (dropdown: Minor injury / Behaviour / Health / Other)
+  - Date & time (auto-filled, editable)
+  - Description (multi-line text)
+  - Severity (Low / Medium / High)
+  - Notify parents toggle (Yes/No)
+- Linked post preview (if opened from a specific post)
+- [Save incident] primary button; [Cancel] secondary action
+
+States:
+| State | Trigger | What the teacher sees |
+|---|---|---|
+| New incident | Opened from child or post with no existing incident | Empty form with child/post context pre-filled |
+| Editing | Incident opened from admin or teacher view for update (where allowed) | Fields populated with existing values |
+| Saved | Save tapped | Confirmation toast (e.g., "Incident saved"), and form closes back to source screen |
+
+Interactions & Behaviors:
+- Saving creates or updates a structured `incident` record linked to one or more children, a class, and optionally a post.
+- If "Notify parents" is enabled, a follow-up workflow is triggered to send parent notifications and mark the incident as pending/complete notification.
+- Teachers can back out without saving, and no incident record is created.
+
+Data Requirements:
+- Child IDs and class ID
+- Incident metadata: type, date/time, description, severity, notify_parents flag
+- Optional linked post ID
+
+---
+
 ### 4.2 Parent App (React Native — iOS + Android)
 
 ---
@@ -1094,26 +2434,28 @@ Key elements:
 
 ---
 
-**Screen P-3: Parent Home Feed**
+**Screen P-3: Parent Home Feed (REWRITTEN)**
 - Route: `/` (default tab)
 - Entry point: App launch
-- Purpose: Personalized feed of posts where the parent's child is tagged
+- Purpose: Deliver a simple, emotional daily story of the child so parents feel they didn’t miss anything.
 
 Key elements:
-- School logo + "Good morning, [Parent name]" greeting
-- Post cards: full-bleed photo, caption in Fraunces font, child tag, time ago
-- Reaction button (❤️) on each card
+- Daily summary card at the top ("Here’s what [child name] did today") with count of today’s posts and any key highlights
+- Personalized post feed: full-bleed photos, captions in Fraunces font, child tag, time ago — only where the child is tagged
+- Emotional context: gentle copy that frames the day (e.g., "Morning circle", "Art time", milestone highlights)
+- Engagement prompts: ❤️ reaction and subtle text ("React to let the teacher know") on each card
 - Bottom tab nav: Feed | Milestones | Portfolio | Profile
 
 States:
 | State | Trigger | What the parent sees |
 |---|---|---|
-| Loading | App opens | Skeleton cards — warm cream pulsing rectangles |
-| Empty (not yet enrolled) | Child profile exists but no posts | "Your child's first update will appear here soon." + WhatsApp school link |
-| Empty (child not added) | Parent account exists but no child linked | "Ask your school to add you to [School Name]." + WhatsApp school link |
-| No posts today | Posts exist but not today | Past posts visible; "All quiet so far today. Check back after morning circle!" header |
-| Network error | No connection | "Couldn't load — check your connection." + Retry. Stale content stays visible |
-| Normal | Posts exist | Reverse-chronological feed of tagged posts |
+| Loading | App opens | Skeleton daily summary card + skeleton post cards (warm cream pulsing rectangles) |
+| Empty (not yet enrolled) | Child profile exists but no posts | Daily summary card explaining no updates yet + "Your child's first update will appear here soon." + WhatsApp school link |
+| Empty (child not added) | Parent account exists but no child linked | Message: "Ask your school to add you to [School Name]." + WhatsApp school link; no posts |
+| No posts today | Posts exist but not today | Daily summary card explaining there are no new updates yet; past posts visible with "All quiet so far today. Check back after morning circle!" header |
+| No posts for this child this week | Class has posted in the last 7 days but no posts where this child is tagged | Gentle empty state in the summary card and/or feed for the current week (e.g., "This week has been quiet so far" and a smaller line such as "If you're expecting updates, you can check with your school.") plus a non-pushy CTA (e.g., "Check with your school") that opens the platform's default mail/SMS/WhatsApp chooser prefilled with the school's contact details. |
+| Network error | No connection | "Couldn't load — check your connection." + Retry; last known daily summary and posts remain visible |
+| Normal | Posts exist | Daily summary card followed by reverse-chronological feed of tagged posts |
 
 ---
 
@@ -1130,6 +2472,7 @@ Key elements:
 - ❤️ reaction (tappable)
 - Comment input field
 - Comment thread
+ - Optional "Report incorrect tagging" control (button or text link) allowing parents to flag if they believe the wrong child has been tagged or appears in the media; tapping opens a simple confirmation sheet/dialog with optional text field and a primary "Send report" action that records a structured `post_reports` event and then shows a brief thank-you message.
 
 ---
 
@@ -1200,28 +2543,100 @@ Key elements:
 
 ---
 
+**Screen P-9: Fees & Payments**
+- Route: `/fees` (tab or card from Profile / Home)
+- Entry point: Tap "Fees" from the main navigation, profile, or a prominent card on the Parent Home
+- Purpose: Give parents a clear view of pending, paid, and overdue fees and, where enabled, a simple way to pay online
+
+Key elements:
+- Header: "Fees & Payments for [Child name]"
+- Invoice list grouped by status (Pending, Overdue, Paid)
+- For each invoice: fee type, amount, due date, status badge, optional notes
+- "How to pay" section per invoice (e.g., payment instructions) when online payments are not enabled
+- "Pay now" CTA for pending invoices when online UPI payments are enabled
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Loading | Screen opens | Skeleton rows for invoice list |
+| No invoices | No fee records yet | "No fees have been issued yet for [child name]." positive empty state |
+| All paid | Only paid invoices | "All caught up — no pending fees for [child name]." |
+| Pending/Overdue | Unpaid invoices exist | Pending and Overdue sections appear at top with gentle copy; Overdue items highlighted but not blocking access to the rest of the app |
+
+Interactions & Behaviors:
+- Tapping an invoice opens a detail view with full notes and payment history.
+- Tapping "Pay now" launches the configured online payment/UPI flow; on success, the invoice status updates to Paid on the next refresh.
+
+---
+
+**Screen P-10: Documents & Records**
+- Route: `/documents` (under child profile)
+- Entry point: Tap "Documents" from the child's profile or a card in the Parent Milestone/Portfolio area
+- Purpose: Allow parents to securely view key documents the school has uploaded for their child
+
+Key elements:
+- Header: "Documents for [Child name]"
+- Document list: document name, type (e.g., Birth certificate, ID proof, Medical certificate), upload date, and file size/icon
+- [View] / [Download] actions per document (subject to platform capabilities)
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Loading | Screen opens | Skeleton list rows |
+| No documents | No records yet | "Documents shared by your school will appear here." explanation |
+| Documents present | One or more documents uploaded | Scrollable list of documents |
+
+Interactions & Behaviors:
+- Tapping a document opens an in-app viewer where supported or hands off to the OS viewer.
+- Downloads respect authentication/authorisation; links expire appropriately and are not shareable beyond intended scope.
+
+---
+
+**Screen P-11: Incident History**
+- Route: `/incidents` (under child profile)
+- Entry point: Tap "Incidents" from the child's profile, or via a notification about a new incident
+- Purpose: Give parents a clear, sensitive view of any recorded incidents involving their child
+
+Key elements:
+- Header: "Incident history for [Child name]"
+- List of incident cards: date, high-level type (e.g., Minor injury, Behaviour), short summary, and status (e.g., Notified, Acknowledged)
+- Tap-through incident detail view showing: date/time, type, description, follow-up notes, and any recommended next steps
+
+States:
+| State | Trigger | What the parent sees |
+|---|---|---|
+| Loading | Screen opens | Skeleton cards |
+| No incidents | No incident records | "No incidents have been recorded for [child name]." with reassuring copy |
+| Incidents present | One or more incidents exist | Chronological list (most recent first) of incident cards |
+
+Interactions & Behaviors:
+- Tapping a card opens the full incident detail view.
+- Where appropriate, parents can mark an incident as acknowledged (e.g., "I’ve read this"), updating internal status without changing the record.
+
+---
+
 ### 4.3 Admin / Principal Web Dashboard (React + Vite)
 
 ---
 
-**Screen A-1: Dashboard Home**
+**Screen A-1: Dashboard Home (REWRITTEN)**
 - Route: `/dashboard`
 - Entry point: Login redirect, sidebar nav
-- Purpose: Morning check-in — one screen to know if schools are healthy
+- Purpose: Enable fast decision making by surfacing alerts and key metrics in one view.
 
 Key elements:
+- Alerts panel at the top (low engagement, fee issues, attendance issues) with CTAs into detailed views
 - Engagement score hero: large number, trend arrow, delta label
-- Three metric tiles: Posts Today | Attendance Today | Fee Alerts
-- Class Breakdown table (sorted by engagement %, lowest first)
-- "Message teacher" quick-action per class row (opens WhatsApp pre-fill)
+- Operational tiles: Posts Today | Attendance Today | Fee Alerts
+- Class Breakdown table (sorted by engagement %, lowest first) with "Message teacher" quick-action per row
 
 States:
 | State | Trigger | What the admin sees |
 |---|---|---|
-| First week | No prior snapshot | Score shown, trend arrow hidden, "Come back next week..." message |
-| Score < 30% | Low engagement | Score in terracotta + alert: "X classes haven't posted this week" |
-| Score ≥ 70% | Healthy engagement | Score in sage green + "Parents are loving it!" |
-| No parents enrolled | 0 parents added | "Add parents to start measuring engagement." + enrollment link |
+| First week | No prior snapshot | Alerts panel (likely empty) + score shown, trend arrow hidden, "Come back next week..." message |
+| Score < 30% | Low engagement | Alerts panel with low-engagement alerts; score in terracotta + alert: "X classes haven't posted this week" |
+| Score ≥ 70% | Healthy engagement | Alerts panel may be empty or low severity; score in sage green + "Parents are loving it!" |
+| No parents enrolled | 0 parents added | Alerts panel may surface "No parents enrolled"; "Add parents to start measuring engagement." + enrollment link |
 
 ---
 
@@ -1335,8 +2750,86 @@ Key elements:
 - Last 5 exports listed with download links
 
 ---
+**Screen A-9: Fees & Payments Overview**
+- Route: `/fees` (module home)
+- Entry point: Sidebar nav or Fee tile / Fee lifecycle widget on A-1
+- Purpose: Provide a consolidated overview of fee plans, invoice status, and revenue metrics with links into detailed invoice and plan views
 
-**Screen A-9: Login**
+Key elements:
+- Summary KPIs: total invoiced this period, total collected, total overdue, and collection percentage
+- Highlighted alerts: overdue invoices exceeding configured thresholds
+- Quick links: "View invoices" (A-4), "Manage fee plans" (configuration view), and export actions
+
+States:
+| State | Trigger | What the admin sees |
+|---|---|---|
+| No fee data | New school | Guidance on creating first fee plan and invoices |
+| Normal | Active billing | KPI cards + charts or simple tables, plus quick links |
+
+---
+
+**Screen A-10: Admissions Pipeline Overview**
+- Route: `/admissions` (module home)
+- Entry point: Sidebar nav or Admissions funnel widget on A-1
+- Purpose: High-level admissions CRM view summarising pipeline health, with deep links into the Kanban pipeline (A-3) and lead details (Epic 15)
+
+Key elements:
+- Funnel summary: counts per stage (New Inquiry, Tour Scheduled, Tour Done, Seat Offered, Enrolled, Not Joining)
+- Conversion and drop-off percentages between stages
+- Quick filters by term/academic year
+- CTA: "Open pipeline board" → A-3, "View leads" → list view
+
+States:
+| State | Trigger | What the admin sees |
+|---|---|---|
+| No leads | No admissions data yet | "No inquiries yet." + CTA to add first inquiry |
+| Active pipeline | Leads exist | Funnel with counts and conversion percentages, plus quick filters |
+
+---
+
+**Screen A-11: Child Records**
+- Route: `/children` or `/records`
+- Entry point: Sidebar nav section ("Child Records"), or links from incidents/fees/admissions
+- Purpose: Central admin-facing view of each child's full record, including profile, documents, medical info, emergency contacts, and incident history
+
+Key elements:
+- Search and filters (by name, class, status)
+- Child list: name, class, status, indicators for missing key data (e.g., no medical info, no emergency contacts)
+- Child detail drawer/page showing:
+  - Core profile
+  - Documents list
+  - Medical summary
+  - Emergency contacts
+  - Incident history summary
+
+States:
+| State | Trigger | What the admin sees |
+|---|---|---|
+| Loading | Screen opens | Skeleton rows and detail placeholders |
+| No children | School not yet onboarded | Guidance to add classes/children first |
+| Normal | Children exist | Filterable list and detail view |
+
+---
+
+**Screen A-12: Staff Management Overview**
+- Route: `/staff` (module home)
+- Entry point: Sidebar nav or Staff snapshot tile on A-1
+- Purpose: Overview of staff profiles, assignments, and attendance/leave (lite), with links into detailed staff management views
+
+Key elements:
+- KPI tiles: total staff, staff per center, staff with missing assignments/profiles
+- Current-day attendance/leave snapshot (if enabled): present / on leave / absent counts
+- Staff table shortcut: list of staff with role, class/center, and quick actions to edit profile or view attendance history
+
+States:
+| State | Trigger | What the admin sees |
+|---|---|---|
+| No staff | No staff profiles yet | "No staff added yet." + CTA to add first staff member |
+| Normal | Staff profiles exist | KPIs + snapshot + quick links into full Staff Management (A-6) views |
+
+---
+
+**Screen A-13: Login**
 - Route: `/login`
 - Entry point: Direct URL, unauthenticated redirect
 - Purpose: Admin / Principal authentication
@@ -1351,7 +2844,7 @@ Key elements:
 
 ### 4.4 Teacher Web (Browser — React + Vite)
 
-Teachers who access CadenceSprout from a laptop or desktop browser receive a responsive web experience. Primary viewport: 1280px. Tablet viewport: 768px. Layout adapts from the mobile app screens but takes advantage of the wider canvas — sidebar navigation replaces the bottom tab bar, multi-column layouts replace single-column stacks, and drag-and-drop replaces tap-based media selection.
+Teachers who access CadenceSprout from a laptop or desktop browser receive a responsive web experience. Primary viewport: 1280px. Tablet viewport: 768px. Layout adapts from the mobile app screens but takes advantage of the wider canvas — sidebar navigation replaces the bottom tab bar, multi-column layouts replace single-column stacks, and drag-and-drop replaces tap-based media selection. Unless otherwise noted, the Teacher Web experience mirrors the core behaviors of the Teacher mobile app (T-1 to T-7), including AI caption/child-tag behavior, engagement metrics, and basic offline/error states.
 
 ---
 
@@ -1392,14 +2885,15 @@ Key elements:
 - [+ New Post] button in sidebar (primary, sage green) — opens TW-3 Post Composer
 - Class selector dropdown in header (if teacher has multiple classes)
 - Pull-to-refresh equivalent: refresh icon button in header
+ - Engagement feedback strip near the top of the feed summarising recent parent engagement for the selected class (e.g., "80% of parents engaged today — great job!" or "Only 30% of parents saw yesterday's update — consider sharing another moment"), using the same underlying engagement metrics as the admin dashboard.
 
 States:
 | State | Trigger | What the teacher sees |
 |---|---|---|
-| Loading | Page loads | Skeleton cards (2-column) — warm cream pulsing rectangles |
+| Loading | Page loads | Skeleton cards (2-column) — warm cream pulsing rectangles; engagement strip placeholder skeleton |
 | Empty | No children added | "Add your students to get started." + Add Students button |
 | No posts today | Posts exist but not today | Past posts visible, date section header: "No posts yet today" |
-| Normal | Posts exist | Reverse-chronological 2-column grid |
+| Normal | Posts exist | Reverse-chronological 2-column grid plus engagement feedback strip (when data available) at the top of the main content area |
 | Offline | No network | Top banner: "You're offline — showing saved content" |
 
 ---
@@ -1538,7 +3032,7 @@ Data Requirements:
 
 ### 4.5 Parent Web (Browser)
 
-Parents receive a web view either via a WhatsApp magic-link (no login required) or after completing OTP login. The web experience is optimised for mobile browsers first (parents following a WhatsApp link open it on their phone) but is also fully usable on desktop. Primary viewport: 375px (mobile browser); secondary: 768px (tablet); tertiary: 1280px (desktop).
+Parents receive a web view either via a WhatsApp magic-link (no login required) or after completing OTP login. The web experience is optimised for mobile browsers first (parents following a WhatsApp link open it on their phone) but is also fully usable on desktop. Primary viewport: 375px (mobile browser); secondary: 768px (tablet); tertiary: 1280px (desktop). Unless otherwise noted, the Parent Web experience mirrors the core behaviors of the Parent mobile app (P-1 to P-8), including personalised child scoping, summary cards, notifications, and error/offline handling.
 
 ---
 
@@ -1572,7 +3066,7 @@ States:
 - Purpose: Full chronological feed of all posts where the parent's child is tagged; persistent web session post-login
 
 Key elements:
-- Header: school logo, "Good morning, [Parent name]" greeting, notification bell icon
+- Header: school logo, "Good morning, [Parent name]" greeting, notification bell icon with an unread indicator (e.g., badge/dot) when there are unread notifications; tapping the bell opens the Notifications view (PW-7).
 - Feed: full-bleed post cards (4:3 photos, Fraunces captions, child tags, time ago, ❤️ reaction)
 - Bottom nav (mobile browser): Feed | Milestones | Portfolio | Profile
 - Top nav (desktop): inline nav links in header
@@ -1712,6 +3206,111 @@ States:
 
 All endpoints are prefixed `/api/v1/`. All authenticated requests require `Authorization: Bearer {sanctum_token}`. Multi-tenancy is enforced via middleware — `school_id` is extracted from the authenticated user, not accepted as a request parameter (to prevent tenancy bypass).
 
+### 5A. Core Data Model (NEW — LOCK BEFORE BUILD)
+
+This is the single source of truth for backend, AI, and analytics. Any schema change must be reflected here before implementation.
+
+**Entities (Phase 1 scope)**
+
+- **School**
+  - `id`
+  - `name`
+  - `logo_url`
+  - `subdomain`
+  - `created_at`
+- **Class**
+  - `id`
+  - `school_id`
+  - `name`
+  - `academic_year`
+  - `teacher_id`
+- **Teacher**
+  - `id`
+  - `school_id`
+  - `name`
+  - `phone`
+  - `role` (Teacher / Admin in staff context)
+- **Parent**
+  - `id`
+  - `school_id`
+  - `name`
+  - `phone`
+- **Child**
+  - `id`
+  - `class_id`
+  - `parent_id` (primary contact; Phase 1 simple model)
+  - `name`
+  - `dob`
+- **Post**
+  - `id`
+  - `class_id`
+  - `teacher_id`
+  - `media_url` (or array `media_urls`)
+  - `caption`
+  - `created_at`
+- **PostChildTag**
+  - `id`
+  - `post_id`
+  - `child_id`
+  - `confidence_score` (AI)
+  - `confirmed_by_teacher` (boolean)
+- **Milestone**
+  - `id`
+  - `domain` (NEP)
+  - `name`
+  - `age_range`
+- **PostMilestone**
+  - `post_id`
+  - `milestone_id`
+  - `suggested_by_ai` (boolean)
+  - `confirmed_by_teacher` (boolean)
+- **EngagementEvent**
+  - `id`
+  - `parent_id`
+  - `post_id`
+  - `type` (`view` / `like` / `comment`)
+  - `timestamp`
+- **Attendance**
+  - `id`
+  - `child_id`
+  - `class_id`
+  - `date`
+  - `status` (`present` / `absent`)
+- **Invoice** (Phase 1 basic)
+  - `id`
+  - `parent_id`
+  - `amount`
+  - `due_date`
+  - `status` (`pending` / `paid` / `overdue`)
+
+### 5B. Notification System (NEW)
+
+The notification system is core to retention and adoption. It orchestrates push, WhatsApp, and in-app surfaces.
+
+#### Notification Events
+
+| Event              | Channel            | Timing    | Priority |
+|--------------------|--------------------|-----------|----------|
+| New post           | Push + WhatsApp    | Instant   | High     |
+| Milestone achieved | Push               | Instant   | Medium   |
+| No post today      | Teacher push       | 12 PM     | High     |
+| Low engagement     | Admin dashboard    | Daily     | High     |
+| Fee reminder       | WhatsApp           | Scheduled | Medium   |
+| Portfolio ready    | Push + WhatsApp    | Instant   | High     |
+
+#### Rules
+
+- Max 3 push notifications per day per parent.
+- WhatsApp is used only for:
+  - Critical updates
+  - Re-engagement
+- Batch low-priority notifications into a daily digest where possible.
+
+#### Fallback Logic
+
+- If push delivery fails (e.g., token invalid), enqueue a WhatsApp fallback where the event type allows it.
+- If WhatsApp delivery fails, retry via a queue with a maximum of 3 attempts before dropping the event and logging it for review.
+
 ---
 
 ### 5.1 Authentication
@@ -1756,6 +3355,57 @@ Request:
 ```
 
 Response 200: `{ "message": "OTP sent" }`
+
+---
+
+### 🧬 5C. Event Flows & State Persistence (NEW)
+
+This section captures the **backend event system** that turns UI actions into system behaviour. Events are emitted from the Laravel backend and processed via queues (Horizon workers). All handlers must be **idempotent**.
+
+#### 🔁 Core Events (summary)
+
+- **`POST_CREATED`**
+  - → Notify parents (push / in-app).
+  - → Update feeds (T-1/TW-2, P-3/PW-2) and class/child "day updated" flags.
+  - → Trigger milestone AI suggestion workers.
+- **`ATTENDANCE_MARKED`** (a.k.a. `ATTENDANCE_SUBMITTED`)
+  - → Update admin attendance dashboard and class-level summaries.
+  - → Feed attendance into reports/export.
+- **`INCIDENT_LOGGED`**
+  - → Save a structured record into the child timeline.
+  - → Notify parent immediately when sharing is enabled.
+- **`DAILY_REPORT_SAVED`**
+  - → Attach summary to that day’s child/class story.
+  - → Surface in the parent feed and daily/weekly summaries.
+
+#### 5C.1 Canonical Domain Events
+
+| Event name          | Emitted when…                               | Synchronous effects (within request)                          | Asynchronous consumers / side-effects                      |
+|---------------------|---------------------------------------------|----------------------------------------------------------------|------------------------------------------------------------|
+| `POST_CREATED`      | Teacher successfully creates a post (T-2/TW-3) | Insert `posts`, `post_child_tags`, optional `post_milestones` | Parent notifications, milestone suggestion worker, daily summary aggregator, engagement snapshot, "day updated" flag per class/child |
+| `ATTENDANCE_MARKED` | Teacher submits attendance for a class (T-4/TW-4) | Upsert `attendance` rows for each child                        | Admin attendance dashboards (A-1, A-5), absence alerts (if enabled), daily report pre-fill (T-8)                     |
+| `DAILY_REPORT_SAVED`| Teacher saves a daily report (T-8)          | Upsert daily report record for `class_id` + `date`             | Parent daily summary surface on P-3/PW-2, weekly digest builder                                      |
+| `INCIDENT_LOGGED`   | Teacher saves incident form (T-9)           | Insert incident record linked to `child_id` and `class_id`     | Child timeline enrichment (T-5A), admin alerts, parent notifications / P-11 history (per sharing settings)          |
+| `INVOICE_STATUS_CHANGED` | Invoice is created/updated (A-4/A-9)  | Upsert `invoices` row with new `status`                        | Fee reminders/overdue notifications (P-9), admin overdue lists (A-4, A-9), feed cards for overdue fees              |
+| `PARENT_VIEWED_POST`| Parent opens a post (P-3/P-4/PW-2/PW-3)     | Insert `engagement_events` row (`view`), update last_seen_at   | Engagement score calculation, teacher "seen by X of Y" stats, low-engagement alerts for admins                    |
+
+Each domain event should have a clear **source screen(s)** and **primary epics** (see Screen Inventory and Epics sections) so ownership is unambiguous.
+
+#### 5C.2 State Persistence & Idempotency Rules
+
+- **Events are immutable** — handlers should never modify past events, only derive new state (rows or aggregates).
+- **Idempotent handlers:** if a queue job retries, re-processing the same event **must not duplicate** notifications, invoices, or aggregates.
+  - Example: `POST_CREATED` handlers should check whether notifications have already been enqueued for the given `post_id` before creating new ones.
+- **Derived state examples:**
+  - Engagement score snapshots (`engagement_snapshots`) derived from `EngagementEvent` and `Post`.
+  - Per-class "day updated" flag derived from presence of `POST_CREATED` for that class+date.
+  - Attendance summary per class derived from `Attendance` rows.
+
+#### 5C.3 Relation to Trigger Engine & Metrics
+
+- The **System Trigger Engine** (Section ⚡) operates on top of these events — e.g., `POST_CREATED` and `PARENT_VIEWED_POST` feed into teacher/parent nudges.
+- The **Success Metrics** (Section 10) rely on these same events as their data source (North Star, teacher posting rate, WAU, etc.).
+- Any new engagement or OS behaviour should first be modelled as a **new domain event** before UI is designed, to keep the system coherent.
 
 ---
 
@@ -2213,6 +3863,24 @@ The Digital Personal Data Protection Act 2023 applies directly to CadenceSprout 
 
 ---
 
+### 6A. Permissions Matrix (NEW)
+
+Permissions are critical for DPDP compliance and for maintaining parent trust. The table below summarizes who can see and edit what.
+
+| Role    | Can View              | Can Edit            | Restrictions                        |
+|---------|-----------------------|---------------------|-------------------------------------|
+| Teacher | Children in own class | Posts, attendance   | Cannot access other classes         |
+| Parent  | Own child only        | Reactions, comments | Cannot see other children           |
+| Admin   | Entire school         | All (school-scoped) | Full access at school scope only    |
+
+**Special Rules**
+
+- Parents ONLY see posts where their child is tagged and confirmed by the teacher.
+- Group photos are visible to a parent only if their child is tagged on that post.
+- Teachers must confirm AI child tagging before a post becomes visible to parents.
+
+---
+
 ### 6.2 Performance Targets
 
 **API response times (95th percentile):**
@@ -2281,6 +3949,34 @@ The Digital Personal Data Protection Act 2023 applies directly to CadenceSprout 
 **Face recognition:**
 - Rekognition is called only when `children.dpdp_consent_at IS NOT NULL`
 - A CI test must enforce this gate — failure means a DPDP violation
+
+---
+
+### 6B. Edge Case Handling (NEW)
+
+Robust handling of AI and data edge cases is essential for trust.
+
+**AI Errors**
+
+- Teachers can:
+  - Remove incorrect child tags suggested by AI.
+  - Add missing child tags manually.
+- Parents can:
+  - Report incorrect tagging (for example, "This is not my child") from the post detail view, which flags the post for admin review.
+
+**Data Issues**
+
+| Scenario                    | Resolution                               |
+|-----------------------------|------------------------------------------|
+| Duplicate child             | Admin merge tool                         |
+| Wrong parent linked         | Admin reassigns child to correct parent  |
+| Teacher posted wrong class  | Editable within 10 minutes, then locked  |
+
+**System Failures**
+
+- Upload fails → retry queue + clear manual retry affordance in the UI.
+- AI caption fails → fallback to manual caption input with a friendly prompt.
+- Face recognition fails → manual child tagging remains available and is clearly surfaced.
 
 ---
 
@@ -2658,6 +4354,30 @@ Phase 2 begins when: 10+ paying schools are live, NPS ≥ 30, and the Phase 1 pr
 
 ---
 
+### 🚀 Growth Hooks (NEW)
+
+Built-in virality and growth loops that tie product value to acquisition.
+
+1. **Shareable Moments**
+   - Parents can share selected posts externally.
+   - Shared views include subtle "Powered by CadenceSprout" branding.
+2. **Portfolio Sharing**
+   - Year-end portfolio PDFs can be shared via link.
+   - Acts as a marketing asset during admissions season.
+3. **Admissions Loop**
+   - Inquiry source tracking and referral tagging for new leads.
+4. **WhatsApp Entry Funnel**
+   - Magic link → web feed → app install as the default funnel.
+
+**Metrics (how we know these are working)**
+
+- **Shareable Moments:** % of posts that are shared externally at least once each week.
+- **Portfolio Sharing:** % of active parents who open or download the year-end portfolio.
+- **Admissions Loop:** % of new admissions that have a captured referral source or tagged referrer.
+- **WhatsApp Entry Funnel:** Magic-link → app install conversion rate (see Success Metrics → Leading Indicators).
+
+---
+
 ### Epic P2-5: Official WhatsApp Business API Migration
 
 **Trigger:** Wapi (unofficial bridge) is blocked or unreliable. Official API provides guaranteed delivery, read receipts, and rich message templates.
@@ -2811,26 +4531,56 @@ Phase 3 begins when: India PMF is confirmed (ARR > ₹1Cr, NPS ≥ 50). Franchis
 
 ## 10. Success Metrics
 
-### Phase 1 Launch Criteria (Month 10)
+This section formalises the **System Definition metrics** (North Star + supporting metrics) and ties them directly to feature levers and the System Trigger Engine.
+
+### 10.1 Phase 1 Launch Criteria (Month 10)
 
 These are the pass/fail criteria that define a successful Phase 1 launch. All must be true before the product is considered launched.
 
-| Criterion | Target | How Measured |
-|---|---|---|
-| Pilot school chain fully live | 1 chain, 5+ centers, daily active teachers and parents | Admin dashboard — classes with ≥1 post/day for 2 consecutive weeks |
-| Parent feed adoption | ≥70% of enrolled parents active in last 7 days | Engagement score ≥70% on pilot school for 2 consecutive weeks |
-| Teacher posting cadence | ≥3 posts per class per day | `posts` table — average posts/class/day over trailing 14 days |
-| Self-serve onboarding live | A new school can sign up and invite teachers without founder involvement | End-to-end test: new school completes onboarding in < 15 minutes with no support contact |
-| Manual invoicing live | At least 3 schools using fee management for monthly invoices | Fee invoices created and marked paid for at least 1 billing cycle |
-| Teacher NPS | ≥30 | In-app NPS survey sent to teachers at Month 10 |
+| Criterion | Target | How Measured | Primary Levers |
+|---|---|---|---|
+| Pilot school chain fully live | 1 chain, 5+ centers, daily active teachers and parents | Admin dashboard — classes with ≥1 post/day for 2 consecutive weeks | Onboarding flow (Epics 1–2), A-1 dashboard, support playbook |
+| **North Star: parent daily visibility** | ≥60% of enrolled parents see ≥1 post per day for trailing 14 days (pilot) | Event tracking: per-parent daily views on P-3/PW-2; cross-checked with engagement snapshots | Teacher posting cadence (T-1/TW-2), Parent notifications, Trigger Engine §2 (Parent Engagement) |
+| Parent feed adoption | ≥70% of enrolled parents active in last 7 days | Engagement score ≥70% on pilot school for 2 consecutive weeks | Magic-link onboarding (P-0/P-1), app install funnel, weekly digest trigger |
+| Teacher posting cadence | ≥3 posts per class per day | `posts` table — average posts/class/day over trailing 14 days | T-1/T-2 UX, Teacher nudges (Trigger Engine §1), admin coaching via A-1 |
+| Self-serve onboarding live | A new school can sign up and invite teachers without founder involvement | End-to-end test: new school completes onboarding in < 15 minutes with no support contact | Epics 1–2 flows, error handling, docs |
+| Manual invoicing live | At least 3 schools using fee management for monthly invoices | Fee invoices created and marked paid for at least 1 billing cycle | A-4/A-9 UX, soft fee reminders (Trigger Engine §4) |
+| Teacher NPS | ≥30 | In-app NPS survey sent to teachers at Month 10 | Overall UX quality, posting friction, reliability |
 
-### Engagement Score Definition
+### 10.2 System Metrics (aligned with System Definition)
+
+These mirror the **System Definition** section and should be tracked weekly for the pilot and monthly across all schools.
+
+| Metric (from System Definition) | Definition | Trigger / Feature Levers |
+|---|---|---|
+| **North Star: % of parents who see ≥1 meaningful update/day** | Parents with ≥1 post view per day ÷ total enrolled parents, measured over trailing 14 days | Posting UX (T-1/T-2/TW-2), New post notifications & reminders (Trigger Engine §2), Feed relevance & performance |
+| Daily teacher posting rate | Average posts per class per day over trailing 7/14 days | Teacher nudges (Trigger Engine §1), emotional reinforcement on T-1/TW-2, admin coaching via A-1 |
+| Parent weekly active rate (WAU) | Parents with ≥1 app or web session and ≥1 view in last 7 days ÷ total enrolled parents | New post notifications, reminder notifications (Trigger Engine §2), Weekly summary/digest, Daily Report visibility (P-3) |
+| Avg posts per class per week | Total posts per class per week (7-day) | Same as posting rate; also influenced by AI captioning/child tagging friction |
+| % children with milestone coverage | Children with ≥N milestones logged in the term ÷ total children | AI milestone suggestions from posts (Cross-Feature: Milestones), T-6/TW-6 UX, admin prompts in A-11 |
+| Parent engagement (views / reactions) | Avg views, reactions, comments per post (segmented by class/school) | Copy/visuals on P-3/P-4/PW-2/PW-3, notification tuning, incident/daily report surfacing, growth prompts |
+
+**Metric → Screen/Epic Map (for ownership)**
+
+| Metric | Primary Screens / Surfaces | Primary Epics |
+|---|---|---|
+| **North Star: parent daily visibility** | P-3 Parent Feed (mobile), P-4 Child Timeline, PW-2 Parent Feed (web), TW-2 Teacher Feed (web) | Epic 3 – Teacher Posting Loop, Epic 4 – Parent Feed & Engagement |
+| Daily teacher posting rate | T-1 Teacher Home & Feed, T-2 Create Post, TW-2 Teacher Feed (web), A-1 Admin Dashboard (posting tile) | Epic 3 – Teacher Posting Loop, Epic 7 – Admin Dashboard |
+| Parent weekly active rate (WAU) | P-3/PW-2 feeds, notifications entry points, login/onboarding screens | Epic 4 – Parent Feed & Engagement, Epic 9 – Parent Engagement System |
+| % children with milestone coverage | T-6/TW-6 Milestone entry, P-6/PW-6 Milestone views, A-11 Child Records | Epic 5 – Portfolios & Milestones, Epic 15 – Child Records & Compliance |
+| Parent engagement (views / reactions) | P-3/PW-2 feed cards, P-4 Child Timeline, reaction/comment components | Epic 4 – Parent Feed & Engagement, Epic 9 – Parent Engagement System |
+
+Engineering and product should maintain a simple dashboard where each of these metrics appears alongside the **linked triggers** so changes to the Trigger Engine can be seen in the data.
+
+### 10.3 Engagement Score Definition
 
 School-level engagement score = (parents who viewed ≥1 post in the trailing 7 days ÷ total enrolled parents) × 100
 
-Stored as a weekly snapshot in `engagement_snapshots`. Not recalculated on read. The formula and its inputs must be shared with the pilot school owner before launch so they understand what they are looking at.
+- Stored as a weekly snapshot in `engagement_snapshots`. Not recalculated on read.
+- Directly related to the **North Star** but on a 7-day horizon instead of daily.
+- The formula and its inputs must be shared with the pilot school owner before launch so they understand what they are looking at.
 
-### 3-Month Pilot Milestones
+### 10.4 3-Month Pilot Milestones
 
 | Milestone | Target |
 |---|---|
@@ -2839,7 +4589,7 @@ Stored as a weekly snapshot in `engagement_snapshots`. Not recalculated on read.
 | Parent app adoption | ≥70% of enrolled parents active |
 | Principal dashboard weekly use | Principal views dashboard ≥3 times/week |
 
-### 6-Month Growth Milestones
+### 10.5 6-Month Growth Milestones
 
 | Milestone | Minimum | Stretch |
 |---|---|---|
@@ -2848,25 +4598,30 @@ Stored as a weekly snapshot in `engagement_snapshots`. Not recalculated on read.
 | Parent activity definition | Opened app + viewed ≥1 post in last 7 days | — |
 | Pipeline | At least 1 franchise chain in sales pipeline | — |
 
-### 12-Month ARR Target
+### 10.6 12-Month ARR Target
 
 - 50 paying chains → ₹50L+ ARR
 - Pricing at Month 12: ₹40-60/child/month (up from ₹20-30 at launch)
 - Condition for price increase: 10+ paying schools live AND teacher NPS ≥ 30
 - Illumine customer win: at least 1 school that switched from Illumine (moat validation)
 
-### Leading Indicators (Weekly Tracking)
+### 10.7 Leading Indicators (Weekly Tracking)
 
 These should be monitored weekly from Day 1 of the pilot, not just at month-end reviews:
 
 | Indicator | Healthy Signal | Warning Signal |
 |---|---|---|
-| Posts per class per day | ≥3 | < 1 for 3 consecutive days |
-| Parent feed open rate | ≥60% of enrolled parents daily | < 30% 7-day active |
+| Posts per class per day (Teacher posting rate) | ≥3 | < 1 for 3 consecutive days |
+| Parent feed open rate (toward North Star) | ≥60% of enrolled parents daily | < 30% 7-day active |
 | WhatsApp switching rate | > 50% of notified parents opening app vs. staying on WhatsApp link | < 30% (see CEO Plan risk #1) |
 | AI caption acceptance rate | > 60% of captions posted without teacher edit | < 30% (indicates AI quality issue) |
 | Magic-link to app install conversion | ≥30% of magic-link users install the app within 7 days | < 15% (reconsider install nudge UX) |
 | Face recognition accuracy | < 5% false positive rate on confirmed tags | > 10% (impacts teacher trust) |
+| Daily summary usage rate | ≥60% of active parents view or scroll past the daily summary card at least 5 days/week | < 30% of active parents see the daily summary card (summary not adding value) |
+| Messaging usage rate | ≥40% of active classes have at least 1 parent–teacher message or announcement per week | < 20% of classes using in-app messaging or announcements (communication staying on WhatsApp) |
+| Teacher nudge effectiveness (Trigger Engine §1) | ≥40% of teachers who receive a "post today" nudge create at least 1 post that day | < 20% of nudged teachers posting (nudges not effective or poorly timed; revisit triggers/copy) |
+| Post share rate | ≥10% of posts are shared externally at least once per week | < 3% of posts shared externally (growth hooks underused) |
+| Referral-tagged admissions share | ≥30% of new admissions have a referral source or tagged referrer recorded | < 10% of admissions with referral source captured (growth loop not closing) |
 
 ---
 
